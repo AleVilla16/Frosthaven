@@ -1,7 +1,7 @@
-// Service worker del Compagno di Frosthaven.
+// Service worker di Frosthaven.
 // Quando pubblichi una nuova versione dell'app, aumenta VERSIONE: i vecchi file in cache vengono cancellati.
 const VERSIONE = 'v2';
-const CACHE = 'compagno-frosthaven-' + VERSIONE;
+const CACHE = 'frosthaven-' + VERSIONE;
 const FILE_APP = [
   './',
   'index.html',
