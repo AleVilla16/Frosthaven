@@ -1,0 +1,19 @@
+{
+  "name": "Compagno di Frosthaven",
+  "short_name": "Frosthaven",
+  "description": "Fasi del round, iniziativa, personaggi, mostri, mazzi, bottini e regole di Frosthaven in italiano.",
+  "lang": "it",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0b141b",
+  "theme_color": "#0b141b",
+  "categories": ["games", "utilities"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
