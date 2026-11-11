@@ -102,6 +102,10 @@ h2{font-size:1.3rem} h3{font-size:1.05rem}
 .clockw{display:flex;align-items:center;gap:8px}.clockw b{font-size:1.25rem;font-variant-numeric:tabular-nums;min-width:3.6em}
 .ibtn.sm{width:32px;height:32px;box-shadow:none}
 .mrows{display:flex;flex-direction:column}
+.er-l{display:flex;flex-direction:column;margin-top:4px}
+.er-r{display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--line)}.er-r:last-child{border-bottom:0}
+.er-t{flex:1;min-width:0;display:flex;flex-direction:column}.er-t small{color:var(--muted);font-size:.8rem}
+.er-p p{margin:4px 0 0}
 .cd{display:inline-flex;align-items:center;gap:2px}.cd.sm{padding:1px 5px;border-radius:999px}.cd.sm .ci{margin:0;width:1.25em;height:1.25em}
 .cd.add{border-style:dashed;border-color:var(--line);color:var(--muted);background:transparent}
 .perm{font-weight:700;margin-left:3px}
@@ -248,7 +252,9 @@ input.init{width:3.3em;font-size:1.2rem;font-weight:700;padding:3px;border-radiu
 .dock{position:sticky;top:calc(env(safe-area-inset-top,0px) + 8px);z-index:8;background:color-mix(in srgb,var(--surface) 94%,transparent);backdrop-filter:blur(8px);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
 .dock-in{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 14px}
 .dk{display:flex;flex-direction:column;min-width:0;overflow-wrap:anywhere;line-height:1.25}
-.dock .row{flex-wrap:nowrap;flex:none}
+.dock .row{flex-wrap:nowrap;flex:none;margin-left:auto}
+.dk{flex:1 1 150px;min-width:0}
+.dock-in{flex-wrap:wrap}
 /* contatori, condizioni */
 .stp{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--surface)}
 .stp button{border:0;background:var(--surface2);width:32px;height:32px;cursor:pointer;font-weight:700;font-size:1.05rem}
@@ -482,7 +488,7 @@ th .gi{font-size:1.05rem}
  .game.slim{grid-template-columns:minmax(0,1fr)}
  .game.slim>.col{display:contents}
  .game.slim>.col>*{order:20}
- .game.slim .hero-p{order:1}.game.slim .prep-p{order:2}.game.slim .ini-panel{order:3;position:static}.game.slim .turn{order:4}.game.slim .field{order:5}.game.slim .end-p{order:6}.game.slim .scen-panel{order:7}.game.slim #rules-panel{order:8}
+ .game.slim .hero-p{order:1}.game.slim .er-p{order:2}.game.slim .prep-p{order:2}.game.slim .ini-panel{order:3;position:static}.game.slim .turn{order:4}.game.slim .field{order:5}.game.slim .end-p{order:6}.game.slim .scen-panel{order:7}.game.slim #rules-panel{order:8}
  input,select,textarea{font-size:16px!important}
 }
 @media (max-width:520px){
@@ -490,7 +496,7 @@ th .gi{font-size:1.05rem}
  .panel{padding:12px;border-radius:12px;gap:10px}
  h2{font-size:1.15rem}
  .top-in{padding-block:8px 0}.brand-logo{height:24px}.brand-ico{width:34px;height:34px}
- .dock-in{padding:8px 10px;gap:8px}.dock .btn.big{padding:8px 14px;font-size:1rem;min-height:42px}.dk b{font-size:.92rem}
+ .dock-in{padding:8px 10px;gap:6px 8px}.dock .btn.big{padding:8px 12px;font-size:.95rem;min-height:40px}.dock .btn:not(.big){padding:6px 10px;font-size:.88rem;min-height:40px}.dock .row{gap:6px;max-width:100%}.dock .ibtn{width:40px;height:40px}.dk b{font-size:.92rem}
  .hero-top{gap:10px 14px}.round b{font-size:2.2rem}
  .prog .ps{font-size:.74rem}.dot{width:30px;height:30px}
  .els{gap:2px;justify-content:space-between;width:100%}.el{width:52px;font-size:.68rem}.disc{width:40px;height:40px}.disc .ci{width:30px;height:30px}
@@ -803,6 +809,13 @@ function vPartita(){
    <div class="note">Elite prima dei normali, in ordine di pedina. Per ciascuno: focus → movimento → attacco, seguendo la carta dall’alto in basso.</div>
    ${standees(cur.i,true)}${miniDeck(m.ally?'decks.alleati':'decks.mostri')}
    <div class="row"><button class="chip" data-a="act" data-id="focus">Come sceglie il focus?</button><button class="chip" data-a="act" data-id="movmostri">Come si muove?</button></div></div>`}}
+ let erp='';
+ if(S.step===4){const act=S.chars.filter(c=>!c.ex&&!c.absent);const els=ELS.filter(([k])=>S.els[k]);const sh=[['decks.mostri','Mostri'],['decks.alleati','Alleati'],...S.chars.map((c,i)=>[`chars.${i}.deck`,c.name||c.cls])].filter(([p])=>{const d=get(p);return d&&d.sh});
+  erp=`<div class="panel er-p"><h2>${GI('recover')}Cosa succede a fine round</h2>
+  <div><span class="lbl">Riposi brevi</span>${act.length?`<div class="er-l">${act.map(c=>{const i=S.chars.indexOf(c),ok=c.discard>=2;return `<div class="er-r">${avChar(c)}<span class="er-t"><b>${h(c.name||c.cls)}</b><small>${c.hand} in mano · ${c.discard} scarti · ${c.lost} perse</small></span>${ok?`<button class="btn sm" data-a="srest" data-i="${i}">${GI('recover')}Riposo breve</button>`:'<small class="muted">meno di 2 scarti</small>'}</div>`}).join('')}</div>`:'<p class="muted small">Nessun personaggio attivo.</p>'}</div>
+  <div><span class="lbl">Elementi</span><p class="small">${els.length?els.map(([k,n])=>`${CI('el-'+k)} ${n}: ${ELST[S.els[k]]} → ${ELST[S.els[k]-1]}`).join(' · '):'Tutti inerti: nessun cambiamento.'}</p></div>
+  <div><span class="lbl">Mazzi da rimescolare</span><p class="small">${sh.length?sh.map(([,n])=>h(n)).join(', ')+' (è uscita una carta ×2 o ∅)':'Nessuno.'}</p></div>
+  <p class="muted small">Ricordate anche gli effetti di fine round dello scenario e delle carte con bonus di round.</p></div>`}
  let end='';
  if(S.step===5){const o=S.outcome,win=o==='win';
   end=`<div class="panel end-p"><div class="chips">${[['win','Completato'],['lose','Perso: torniamo a Frosthaven'],['replay','Perso: rigiochiamo subito']].map(([v,l])=>`<button class="chip ${o===v?'on':''}" data-a="outc" data-v="${v}">${l}</button>`).join('')}</div>
@@ -819,7 +832,7 @@ function vPartita(){
  ${sd==='mazzo'?deckUI():lootUI()}`;
  const dtxt=S.step===0?'Tutto pronto sul tavolo?':S.step===1?'Ognuno sceglie due carte':S.step===2?'Rivelate le carte e scrivete le iniziative':S.step===3?(cur?`Tocca a ${h(cur.name)}`:'Tutti hanno agito'):'Riposi brevi, mazzi, elementi';
  const dock=S.step===5?'':`<div class="dock"><div class="dock-in"><span class="dk"><span class="lbl">Round ${S.round} · ${SHORT[S.step]}</span><b>${dtxt}</b></span><span class="row"><button class="ibtn" data-a="undo" aria-label="Annulla l’ultima mossa" title="Annulla l’ultima mossa"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>${S.step===4?'<button class="btn" data-a="goto" data-i="5">Scenario finito</button>':''}${S.step===3&&cur?'<button class="btn pri big" data-a="endturn">Fine turno</button>':`<button class="btn pri big" data-a="next">${next}</button>`}</span></div></div>`;
- return `${dock}${guide}<div class="game slim"><div class="col">${hero}${field}${turn}${rules}${prep}${end}</div><div class="col">${scenP}${ini}</div></div>`}
+ return `${dock}${guide}<div class="game slim"><div class="col">${hero}${erp}${field}${turn}${rules}${prep}${end}</div><div class="col">${scenP}${ini}</div></div>`}
 
 function monStats(m){const rows=m.boss?[['n','Boss','']]:[['e','Elite','e'],['n','Normale','']];const cnt=k=>m.boss?m.st.length:m.st.filter(s=>k==='e'?s.e:!s.e).length;
  return `<div class="tblw"><table class="mst"><tr><th></th><th>${CI('health','Punti ferita')}</th><th>${GI('move','Movimento')}</th><th>${GI('attack','Attacco')}</th><th>${GI('range','Gittata')}</th></tr>${rows.map(([k,l,c])=>{const v=m[k],n=cnt(k),off=n?'':' off';return `<tr class="${v.note?'hn':''}${off}"><td><b${c?' style="color:var(--elite)"':''}>${l}</b> <span class="muted small">×${n}</span></td><td>${h(v.hp??'—')}</td><td>${h(v.mov??'—')}</td><td>${h(v.att??'—')}</td><td>${v.rng?h(v.rng):'—'}</td></tr>${v.note?`<tr class="nt${off}"><td colspan="5">${noteH(v.note)}</td></tr>`:''}`}).join('')}</table></div><p class="muted small">Valori base del livello ${S.level}: aggiungi i modificatori della carta capacità pescata.</p>`}
