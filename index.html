@@ -102,6 +102,21 @@ h2{font-size:1.3rem} h3{font-size:1.05rem}
 .clockw{display:flex;align-items:center;gap:8px}.clockw b{font-size:1.25rem;font-variant-numeric:tabular-nums;min-width:3.6em}
 .ibtn.sm{width:32px;height:32px;box-shadow:none}
 .mrows{display:flex;flex-direction:column}
+.cd{display:inline-flex;align-items:center;gap:2px}.cd.sm{padding:1px 5px;border-radius:999px}.cd.sm .ci{margin:0;width:1.25em;height:1.25em}
+.cd.add{border-style:dashed;border-color:var(--line);color:var(--muted);background:transparent}
+.perm{font-weight:700;margin-left:3px}
+.immz{display:inline-flex;align-items:center;gap:3px;font-size:.78rem;color:var(--muted);margin-left:4px}.immz .ci{opacity:.7}
+.tok-imm{display:inline-flex;align-items:center;gap:2px;flex-wrap:wrap;justify-content:center;background:none;border:1px dashed var(--line);border-radius:999px;padding:1px 6px;cursor:pointer;color:var(--muted);max-width:100%}
+.tok-imm .gi{width:.95em;height:.95em}.tok-imm .ci{width:1.1em;height:1.1em;filter:grayscale(1);opacity:.75;position:relative}
+.tok-cd{display:flex;flex-wrap:wrap;justify-content:center;gap:2px}
+.dlg.sm{max-width:440px}
+.cpick{display:flex;flex-direction:column}
+.cp-r{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px 10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.cp-r:last-child{border-bottom:0}.cp-r>.ci{width:30px;height:30px}
+.cp-n{display:flex;flex-direction:column;min-width:0}.cp-n small{color:var(--muted);font-size:.78rem;line-height:1.3}
+.cp-a{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+.cp-r.on{background:color-mix(in srgb,var(--frost) 8%,transparent)}.cp-r.imm .cp-n b{text-decoration:line-through;opacity:.7}
+@media (max-width:520px){.cp-r{grid-template-columns:auto minmax(0,1fr)}.cp-a{grid-column:1/-1;justify-content:flex-start}}
 .sec{margin-top:6px;display:flex;align-items:baseline;gap:8px;font-size:1.15rem}
 .kvg4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}@media (max-width:520px){.kvg4{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .kvg4 .kv b{text-transform:none}.csum p{margin:0}.csum.ret{opacity:.85}
@@ -522,11 +537,11 @@ const RES=[['legname','Legname'],['metallo','Metallo'],['pelle','Pelle'],['frecc
 const LOOTT=[['monete','Monete',20],...RES.map(([k,n],i)=>[k,n,i<3?8:2]),['oggetto','Oggetto casuale',1]];
 const LOOTN=Object.fromEntries(LOOTT);
 const COND={
- rigenerazione:{n:'Rigenerazione',p:1,t:'Cura 1 su se stesso all’inizio di ogni turno, anche se stordito. Si rimuove quando subisce danni. Con Ferita: si applica prima Rigenerazione, che rimuove Ferita.',start:'Rigenerazione: Cura 1 su se stesso adesso (prima di Ferita).'},
+ rigenerazione:{n:'Rigenerazione',p:1,t:'Cura 1 su se stesso all’inizio di ogni turno, anche se stordito. Si rimuove quando subisce danni. Con Ferita: si applica prima Rigenerazione, che rimuove Ferita.',start:'Rigenerazione: l’app ha applicato Cura 1 all’inizio del turno (e tolto Ferita, se c’era).'},
  interdizione:{n:'Interdizione',p:1,t:'La prossima volta che sta per subire danni da qualsiasi fonte ne subisce la metà (arrotondata per difetto), poi si rimuove. Con Fragile si annullano a vicenda.'},
  invisibile:{n:'Invisibile',p:1,t:'Non può essere focalizzato né bersagliato dai nemici. I nemici possono attraversarlo ma non fermarsi nel suo esagono. Scade alla fine del suo turno successivo.',exp:1},
  rinforzo:{n:'Rinforzo',p:1,t:'Vantaggio a tutti i suoi attacchi. Scade alla fine del suo turno successivo.',exp:1,start:'Rinforzo: tutti i suoi attacchi hanno vantaggio.'},
- ferita:{n:'Ferita',t:'Subisce 1 danno all’inizio di ogni suo turno. Si rimuove quando viene curato.',start:'Ferita: subisce 1 danno adesso.'},
+ ferita:{n:'Ferita',t:'Subisce 1 danno all’inizio di ogni suo turno. Si rimuove quando viene curato.',start:'Ferita: l’app ha tolto 1 punto ferita all’inizio del turno.'},
  fragile:{n:'Fragile',t:'La prossima volta che sta per subire danni da qualsiasi fonte ne subisce il doppio, poi si rimuove. Si rimuove anche con una cura.'},
  anatema:{n:'Anatema',t:'Subisce 10 danni alla fine del suo turno successivo, poi si rimuove. Si rimuove anche con una cura.',end:'Anatema: se l’aveva già prima di questo turno, subisce 10 danni ora e Anatema si rimuove.'},
  veleno:{n:'Veleno',t:'Tutti gli attacchi che lo bersagliano ottengono +1 Attacco. Una cura rimuove Veleno ma non aumenta i punti ferita.'},
@@ -591,7 +606,7 @@ function evalF(f,C,L){if(typeof f==='number')return f;const val=x=>x==='C'?C:x==
 function applyStats(m,s=S){const d=MON[m.key];if(!d)return;const lv=m.lv??s.level,r=d.L[lv],C=nPG(s);
  const mk=a=>({hp:evalF(a[0],C,lv),mov:a[1],att:a[2],rng:a[3],note:a[4]});
  if(d.b){m.n=mk(r);m.e=mk(r);m.boss=true}else{m.n=mk(r.slice(0,5));m.e=mk(r.slice(5))}}
-function addFromDb(key,ally,s=S){const d=MON[key];if(!d||s.mons.some(m=>m.key===key))return null;const m=newMon({name:(s.set&&s.set.monN&&s.set.monN[key])||d.n,key,ally:!!ally,max:d.c});applyStats(m,s);s.mons.push(m);return m}
+function addFromDb(key,ally,s=S){const d=MON[key];if(!d||s.mons.some(m=>m.key===key))return null;const m=newMon({name:(s.set&&s.set.monN&&s.set.monN[key])||d.n,key,ally:!!ally,max:d.c});applyStats(m,s);m.imm=parseImm(m);s.mons.push(m);return m}
 function syncHp(c){const t=CLHP[c.cls];if(!t)return;const full=c.hp>=c.maxHp;c.maxHp=t[c.level-1];if(full||c.hp>c.maxHp)c.hp=c.maxHp}
 
 /* ---------- stato ---------- */
@@ -633,9 +648,33 @@ function toast(m){const t=$('#toast');t.textContent=m;t.hidden=false}
 const stp=(p,v,min=0,max=999,cls='')=>`<span class="stp ${cls}"><button data-a="step" data-p="${p}" data-d="-1" data-min="${min}" data-max="${max}" aria-label="Diminuisci">−</button><b>${v}</b><button data-a="step" data-p="${p}" data-d="1" data-min="${min}" data-max="${max}" aria-label="Aumenta">+</button></span>`;
 const cnt=(lab,p,v,min,max,cls)=>`<span class="cnt">${lab}${stp(p,v,min,max,cls)}</span>`;
 const inp=(lab,p,v,type='text',extra='')=>`<label class="f">${lab}<input id="i-${p.replace(/\./g,'-')}" type="${type}" data-p="${p}" value="${h(v??'')}" ${extra}></label>`;
-function condUI(p,arr,pc){
- return `<span class="conds">${arr.map(c=>`<button class="cd ${COND[c].p?'p':''}" data-a="cdel" data-p="${p}" data-c="${c}" title="${h(COND[c].t)} — tocca per rimuovere">${COND_IC[c]?CI(COND_IC[c]):''}${COND[c].n} ×</button>`).join('')}
- <select data-cadd="${p}" aria-label="Aggiungi condizione"><option value="">+ condizione</option>${Object.entries(COND).filter(([k,c])=>!arr.includes(k)&&(pc||!c.pc)).map(([k,c])=>`<option value="${k}">${c.n}</option>`).join('')}</select></span>`}
+function addCond(p,c){const o=get(entPath(p)),nm=entName(p);if(!o)return false;
+ if(immOf(p).includes(c)){toast(`${nm} è immune a ${COND[c].n}`);return false}
+ if(o.cond.includes(c))return false;
+ const opp={interdizione:'fragile',fragile:'interdizione'}[c];
+ if(opp&&o.cond.includes(opp)&&!isPerm(o,opp)){o.cond=o.cond.filter(x=>x!==opp);toast(`${COND[c].n} e ${COND[opp].n} si annullano: ${nm} non ha più nessuna delle due`);return}
+ o.cond.push(c);const cur=current();if(cur&&(cur.k==='c'?S.chars[cur.i]===o:S.mons[cur.i].st.includes(o)))(o.fresh=o.fresh||[]).push(c)}
+let dmgSeen={};
+function condOnHp(p,dl){const m=p.match(/^(chars\.\d+|mons\.\d+\.st\.\d+)\.hp$/);if(!m)return;const ep=m[1],o=get(ep);if(!o||!o.cond)return;const nm=entName(ep+'.cond'),msg=[];
+ if(dl>0&&o.cond.includes('ferita')&&!isPerm(o,'ferita')){o.cond=o.cond.filter(x=>x!=='ferita');msg.push('Ferita tolta (cura)')}
+ if(dl<0){if(o.cond.includes('rigenerazione')&&!isPerm(o,'rigenerazione')){o.cond=o.cond.filter(x=>x!=='rigenerazione');msg.push('Rigenerazione tolta (danni)')}
+  const l=['interdizione','fragile','veleno'].filter(c=>o.cond.includes(c)),now=Date.now();
+  if(l.length&&!(dmgSeen[ep]&&now-dmgSeen[ep]<15000)){dmgSeen[ep]=now;modal={k:'dmg',p:ep+'.cond',l,prev:modal}}}
+ if(msg.length)toast(`${nm}: ${msg.join(' · ')}`)}
+function turnStart(){const cur=current();if(!cur)return;const key=S.round+':'+cur.id;S.stl=(S.stl||[]).filter(k=>k.startsWith(S.round+':'));if(S.stl.includes(key))return;S.stl.push(key);const msgs=[];
+ const ents=cur.k==='c'?[[S.chars[cur.i],cur.name]]:S.mons[cur.i].st.map(s=>[s,`${cur.name} ${s.n}`]);
+ ents.forEach(([o,nm])=>{const max=o.maxHp!=null?o.maxHp:((o.e?S.mons[cur.i].e:S.mons[cur.i].n).hp);
+  if(o.cond.includes('rigenerazione')){const was=o.hp;o.hp=Math.min(max,o.hp+1);let t=`${nm}: Rigenerazione +${o.hp-was} PF`;if(o.cond.includes('ferita')&&!isPerm(o,'ferita')){o.cond=o.cond.filter(x=>x!=='ferita');t+=', Ferita tolta senza danni'}msgs.push(t)}
+  else if(o.cond.includes('ferita')){o.hp=Math.max(0,o.hp-1);msgs.push(`${nm}: Ferita −1 PF${o.hp===0?' (0 PF!)':''}`)}});
+ if(msgs.length)toast(msgs.join(' · '))}
+function entPath(p){return p.replace(/\.cond$/,'')}
+function immOf(p){const m=p.match(/^mons\.(\d+)/);if(m){const se=S.mons[m[1]];if(!se)return [];if(!se.imm)se.imm=parseImm(se);return se.imm}const c=get(entPath(p));if(!c)return [];if(!c.imm)c.imm=[];return c.imm}
+function parseImm(m){const out=[];[m.n&&m.n.note,m.e&&m.e.note].forEach(t=>{const x=(t||'').match(/Immune a: ([^;]*)/);if(x)x[1].split(',').forEach(w=>{const k=Object.keys(COND).find(k=>COND[k].n.toLowerCase()===w.trim().toLowerCase());if(k&&!out.includes(k))out.push(k)})});return out}
+function entName(p){const m=p.match(/^chars\.(\d+)/);if(m){const c=S.chars[m[1]];return c.name||c.cls||'Personaggio'}const k=p.match(/^mons\.(\d+)\.st\.(\d+)/);if(k){const se=S.mons[k[1]],st=se.st[k[2]];return `${se.name} ${st.n}`}return 'Pedina'}
+const isPerm=(o,c)=>!!(o&&o.perm&&o.perm.includes(c));
+function cChip(p,c,o,small){return `<button class="cd ${COND[c].p?'p':''} ${small?'sm':''}" data-a="cinfo" data-p="${p}" data-c="${c}" title="${h(COND[c].n)}: tocca per i dettagli">${COND_IC[c]?CI(COND_IC[c]):''}${small?'':COND[c].n}${isPerm(o,c)?'<span class="perm" title="Permanente">∞</span>':''}</button>`}
+function condUI(p,arr,pc){const o=get(entPath(p)),im=immOf(p);
+ return `<span class="conds">${arr.map(c=>cChip(p,c,o)).join('')}<button class="cd add" data-a="cpick" data-p="${p}" data-pc="${pc?1:0}">+ condizione</button>${im.length?`<span class="immz" title="Immunità">Immune: ${im.map(c=>COND_IC[c]?CI(COND_IC[c],COND[c].n):COND[c].n).join('')}</span>`:''}</span>`}
 function ruleCard(id){const r=RULES.find(r=>r.id===id);if(!r)return'';return `<div class="rule"><h3>${r.t}<span class="pg">p. ${r.p}</span></h3><ul class="chk">${r.b.map(b=>`<li>${b}</li>`).join('')}</ul></div>`}
 function condNotes(e){
  const arr=e.cond,fr=e.fresh||[],out=[];const o=['stordire','rigenerazione','ferita','immobilizzare','disarmare','compromettere','confondere','rinforzo'];
@@ -704,12 +743,13 @@ function hpbar(hp,max,x=''){const r=max?Math.max(0,Math.min(1,hp/max)):0;return 
 function miniDeck(p){const d=get(p),L=S.deckSel===p?d.last:null;
  return `<div class="mini row">${L?L.c.map((c,i)=>`<span class="mc ${cval(c)>0?'g':cval(c)<0?'b':''} ${L.c.length>1&&i!==L.pick?'off':''}">${h(c.replace(/ [MB]$/,''))}</span>`).join(''):''}<button class="btn" data-a="draw" data-m="0" data-p="${p}">Pesca modificatore</button><button class="btn sm" data-a="draw" data-m="1" data-p="${p}">Vantaggio</button><button class="btn sm" data-a="draw" data-m="-1" data-p="${p}">Svantaggio</button><span class="muted small">${d.draw.length} carte nel mazzo</span></div>`}
 function tokHp(p,hp,max){return `<span class="tok-hp"><button data-a="step" data-p="${p}" data-d="-1" data-min="0" data-max="${max}" aria-label="Togli un punto ferita">−</button><b>${h(hp)}<small>/${h(max)}</small></b><button data-a="step" data-p="${p}" data-d="1" data-min="0" data-max="${max}" aria-label="Aggiungi un punto ferita">+</button></span>`}
-const condShort=a=>a.length?`<span class="tok-cd">${a.map(c=>(COND_IC[c]?CI(COND_IC[c]):'')+COND[c].n).join(', ')}</span>`:'';
+const immShort=(p,pc)=>{const im=immOf(p+'.cond');return im.length?`<button class="tok-imm" data-a="cpick" data-p="${p}.cond" data-pc="${pc?1:0}" title="Immune a: ${im.map(c=>COND[c].n).join(', ')}" aria-label="Immune a: ${im.map(c=>COND[c].n).join(', ')}">${GI('shield')}${im.map(c=>COND_IC[c]?`<i class="ci ci-${COND_IC[c]}" aria-hidden="true"></i>`:COND[c].n.slice(0,3)).join('')}</button>`:''};
+const condShort=(a,p)=>a.length?`<span class="tok-cd">${a.map(c=>cChip(p+'.cond',c,get(p),1)).join('')}</span>`:'';
 function fieldUI(){
- const ch=S.chars.map((c,i)=>`<div class="tok ${c.ex||c.absent||c.hp<=0?'out':''}">${tokHp(`chars.${i}.hp`,c.hp,c.maxHp)}${hpbar(c.hp,c.maxHp)}<button class="tok-open" data-a="mopen" data-k="c" data-id="${c.id}" aria-label="Apri la scheda di ${h(c.name||c.cls||'Personaggio')}"><span class="avw">${avatar(c.name||c.cls,'c',i,'xl')}${CLSG[c.cls]&&!c.img?`<span class="clsb cg-${CLSG[c.cls]}" title="${h(c.cls)}"></span>`:''}</span><span class="tok-nm">${h(c.name||c.cls||'Personaggio')}</span>${c.ex?'<span class="tok-ty">sfinito</span>':c.absent?'<span class="tok-ty">assente</span>':''}</button>${condShort(c.cond)}</div>`).join('');
+ const ch=S.chars.map((c,i)=>`<div class="tok ${c.ex||c.absent||c.hp<=0?'out':''}">${tokHp(`chars.${i}.hp`,c.hp,c.maxHp)}${hpbar(c.hp,c.maxHp)}<button class="tok-open" data-a="mopen" data-k="c" data-id="${c.id}" aria-label="Apri la scheda di ${h(c.name||c.cls||'Personaggio')}"><span class="avw">${avatar(c.name||c.cls,'c',i,'xl')}${CLSG[c.cls]&&!c.img?`<span class="clsb cg-${CLSG[c.cls]}" title="${h(c.cls)}"></span>`:''}</span><span class="tok-nm">${h(c.name||c.cls||'Personaggio')}</span>${c.ex?'<span class="tok-ty">sfinito</span>':c.absent?'<span class="tok-ty">assente</span>':''}</button>${condShort(c.cond,`chars.${i}`)}${immShort(`chars.${i}`,1)}</div>`).join('');
  const tokM=ally=>S.mons.map((m,mi)=>{if(!!m.ally!==ally)return '';const many=m.st.length>1;return m.st.map((s,si)=>({s,si})).sort((a,b)=>(b.s.e-a.s.e)||(a.s.n-b.s.n)).map(({s,si})=>{const mx=(s.e?m.e:m.n).hp,p=`mons.${mi}.st.${si}`,el=s.e&&!m.boss;
   const v=s.e?m.e:m.n;
-  return `<div class="tokw ${s.hp<=0?'out':''}"><div class="tok"><span class="tav ${el?'e':''}" title="${m.boss?'Boss':el?'Elite':'Normale'} · tocca per aprire la scheda" data-a="mopen" data-k="m" data-id="${m.id}" data-s="${si}" role="button" tabindex="0">${ptM(m)?`<span class="tav-img pt-${ptM(m)}"></span>`:svgI(ally?ICO_A:ICO_M,30)}${many?`<span class="tnum"><input type="number" min="1" max="${m.max||10}" data-p="${p}.n" value="${s.n}" aria-label="Numero della pedina"></span>`:''}</span><button class="tok-open" data-a="mopen" data-k="m" data-id="${m.id}" data-s="${si}" aria-label="Apri la scheda di ${h(m.name||'Mostro')} ${s.n}"><span class="tok-nm">${h(m.name||'Mostro')}</span></button>${condShort(s.cond)}${s.hp<=0?`<button class="btn sm warn" data-a="kill" data-m="${mi}" data-s="${si}">Morto</button>`:''}</div>
+  return `<div class="tokw ${s.hp<=0?'out':''}"><div class="tok"><span class="tav ${el?'e':''}" title="${m.boss?'Boss':el?'Elite':'Normale'} · tocca per aprire la scheda" data-a="mopen" data-k="m" data-id="${m.id}" data-s="${si}" role="button" tabindex="0">${ptM(m)?`<span class="tav-img pt-${ptM(m)}"></span>`:svgI(ally?ICO_A:ICO_M,30)}${many?`<span class="tnum"><input type="number" min="1" max="${m.max||10}" data-p="${p}.n" value="${s.n}" aria-label="Numero della pedina"></span>`:''}</span><button class="tok-open" data-a="mopen" data-k="m" data-id="${m.id}" data-s="${si}" aria-label="Apri la scheda di ${h(m.name||'Mostro')} ${s.n}"><span class="tok-nm">${h(m.name||'Mostro')}</span></button>${condShort(s.cond,p)}${immShort(p,0)}${s.hp<=0?`<button class="btn sm warn" data-a="kill" data-m="${mi}" data-s="${si}">Morto</button>`:''}</div>
   <div class="tstat ${el?'e':''}"><span class="thp">${tokHp(p+'.hp',s.hp,mx)}${hpbar(s.hp,mx)}</span><span>${GI('move','Movimento')}<b>${h(v.mov??'—')}</b></span><span>${GI('attack','Attacco')}<b>${h(v.att??'—')}</b></span>${v.rng?`<span>${GI('range','Gittata')}<b>${h(v.rng)}</b></span>`:''}${v.note?`<span class="tnote">${noteH(v.note)}</span>`:''}</div></div>`}).join('')}).join('');
  const al=tokM(true),mo=tokM(false);
  return `<div class="panel field"><div class="row sp"><h2>${GI('entities')}In campo</h2><span class="muted small">Bordo bianco normale, giallo elite</span></div>
@@ -963,7 +1003,7 @@ function vAvamposto(){const c=S.camp,w=c.sett,se=SEASON(w);
 function vRegole(){
  const cats=[...new Set(RULES.map(r=>r.c))];
  return `<div class="row sp"><h2>Regole</h2><input type="search" id="q" placeholder="Cerca: veleno, riposo, focus…" style="flex:1;max-width:340px" aria-label="Cerca nelle regole"></div>
- <div class="panel" data-cat><h3>Condizioni <span class="pg">pp. 28–29</span></h3><div class="tblw"><table>${Object.values(COND).map(c=>`<tr data-r><td style="white-space:nowrap"><b style="color:var(${c.p?'--good':'--bad'})">${c.n}</b></td><td>${c.t}</td></tr>`).join('')}</table></div></div>
+ <div class="panel" data-cat><h3>Condizioni <span class="pg">pp. 28–29</span></h3><div class="tblw"><table>${Object.values(COND).map(c=>`<tr data-r><td style="white-space:nowrap"><span class="cl">${(()=>{const k=Object.keys(COND).find(k=>COND[k]===c);return COND_IC[k]?CI(COND_IC[k]):''})()}<b style="color:var(${c.p?'--good':'--bad'})">${c.n}</b></span></td><td>${c.t}</td></tr>`).join('')}</table></div></div>
  ${cats.map(c=>`<div class="panel" data-cat><span class="tag">${c}</span>${RULES.filter(r=>r.c===c).map(r=>`<div data-r>${ruleCard(r.id)}</div>`).join('')}</div>`).join('')}
  <p class="muted small">Riassunti dal regolamento italiano di Frosthaven; i numeri di pagina rimandano al manuale per il testo completo. Le statistiche dei mostri vengono dai dati del progetto open source X-haven Assistant; nomi italiani dei mostri, edifici, costi e calendario da Gloomhaven Secretariat (entrambi con licenza AGPL-3.0). Icone e ritratti da Gloomhaven Secretariat; illustrazioni di Frosthaven © Cephalofair Games, uso personale e non commerciale.</p>`}
 
@@ -1069,13 +1109,29 @@ function vSalva(){const sl=slots(),names=Object.keys(sl).sort((a,b)=>sl[b].t-sl[
 let wl;function applyWake(){if(S.set.wake){if(navigator.wakeLock)navigator.wakeLock.request('screen').then(l=>wl=l).catch(()=>{});}else if(wl){wl.release();wl=null}}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)applyWake()});
 function expire(o,name,msgs){if(!S.set.autoexp)return;const fr=o.fresh||[],gone=[];
- o.cond=o.cond.filter(c=>{if(!(COND[c].exp||c==='anatema')||fr.includes(c))return true;if(c==='anatema'){o.hp=Math.max(0,o.hp-10);msgs.push(`${name}: Anatema, 10 danni`)}else gone.push(COND[c].n);return false});
+ o.cond=o.cond.filter(c=>{if(!(COND[c].exp||c==='anatema')||fr.includes(c)||isPerm(o,c))return true;if(c==='anatema'){o.hp=Math.max(0,o.hp-10);msgs.push(`${name}: Anatema, 10 danni`)}else gone.push(COND[c].n);return false});
  o.fresh=[];if(gone.length)msgs.push(`${name}: scade ${gone.join(', ')}`)}
 
 let modal=null;
 function modalUI(){
  if(zoom&&HQ[zoom.b])return `<div class="ovl zoom" role="dialog" aria-modal="true" aria-label="${h(zoom.n)}"><figure><img src="${HQ[zoom.b]}" alt="${h(zoom.n)}"><figcaption>${h(zoom.n)}</figcaption></figure><button class="ibtn zx" data-a="zoomx" aria-label="Chiudi"><i class="gi gi-close-dialog" style="width:24px;height:24px" aria-hidden="true"></i></button></div>`;
  if(!modal)return '';
+ if(modal.k==='cpick'||modal.k==='cinfo'||modal.k==='dmg'){const p=modal.p,o=get(entPath(p));if(!o){modal=modal.prev||null;return modalUI()}
+  const arr=o.cond||[],im=immOf(p),nm=entName(p),x='<button class="ibtn" data-a="mclose" aria-label="Chiudi"><i class="gi gi-close-dialog" style="width:24px;height:24px" aria-hidden="true"></i></button>';
+  if(modal.k==='cinfo'){const c=modal.c,on=arr.includes(c);
+   return `<div class="ovl"><div class="dlg sm" role="dialog" aria-modal="true"><div class="dlg-h">${COND_IC[c]?`<i class="ci ci-${COND_IC[c]}" style="width:44px;height:44px" aria-hidden="true"></i>`:''}<span class="dlg-t"><span class="lbl">${h(nm)}</span><h2>${COND[c].n}</h2></span>${x}</div>
+   <p>${COND[c].t}</p>${on?`<div class="row"><button class="btn ${isPerm(o,c)?'pri':''}" data-a="cperm" data-p="${p}" data-c="${c}">${isPerm(o,c)?'∞ Permanente: sì':'∞ Rendi permanente'}</button><button class="btn warn" data-a="cdel" data-p="${p}" data-c="${c}">Togli ${COND[c].n}</button></div>`:'<p class="muted small">Condizione già tolta.</p>'}
+   <p class="muted small">Una condizione permanente non scade a fine turno e non viene tolta dalle regole automatiche: la togli solo tu.</p></div></div>`}
+  if(modal.k==='dmg'){const l=modal.l.filter(c=>arr.includes(c));if(!l.length){modal=modal.prev||null;return modalUI()}
+   return `<div class="ovl"><div class="dlg sm" role="dialog" aria-modal="true"><div class="dlg-h"><span class="dlg-t"><span class="lbl">Danni a</span><h2>${h(nm)}</h2></span>${x}</div>
+   ${l.map(c=>`<div class="note ${c==='veleno'?'w':''}"><div class="row" style="flex-wrap:nowrap;align-items:flex-start">${COND_IC[c]?`<i class="ci ci-${COND_IC[c]}" style="width:30px;height:30px" aria-hidden="true"></i>`:''}<span><b>${COND[c].n}</b><br>${COND[c].t}</span></div>${c!=='veleno'?`<div class="row" style="margin-top:6px"><button class="btn sm" data-a="cdel" data-p="${p}" data-c="${c}">Togli ${COND[c].n}</button></div>`:''}</div>`).join('')}
+   <div class="row"><button class="btn pri" data-a="mclose">Ho capito</button></div></div></div>`}
+  const pc=modal.pc;
+  return `<div class="ovl"><div class="dlg" role="dialog" aria-modal="true"><div class="dlg-h"><span class="dlg-t"><span class="lbl">Condizioni di</span><h2>${h(nm)}</h2></span>${x}</div>
+  <div class="cpick">${Object.entries(COND).filter(([k,c])=>pc||!c.pc).map(([k,c])=>{const on=arr.includes(k),imm=im.includes(k);
+   return `<div class="cp-r ${on?'on':''} ${imm?'imm':''}">${COND_IC[k]?`<i class="ci ci-${COND_IC[k]}" aria-hidden="true"></i>`:''}<span class="cp-n"><b style="color:var(${c.p?'--good':'--bad'})">${c.n}</b><small>${h(c.t.split('. ')[0])}.</small></span>
+   <span class="cp-a">${on?`<button class="btn sm ${isPerm(o,k)?'pri':''}" data-a="cperm" data-p="${p}" data-c="${k}" title="Permanente">∞</button><button class="btn sm warn" data-a="cdel" data-p="${p}" data-c="${k}">Togli</button>`:`<button class="btn sm" data-a="cadd2" data-p="${p}" data-c="${k}" ${imm?'disabled':''}>Aggiungi</button>`}<button class="btn sm ${imm?'pri':''}" data-a="cimm" data-p="${p}" data-c="${k}" title="Immunità${p.startsWith('mons.')?' (vale per tutta la serie)':''}">Immune</button></span></div>`}).join('')}</div>
+  <p class="muted small">∞ rende una condizione permanente. «Immune» impedisce di aggiungerla${p.startsWith('mons.')?'; per i mostri vale per tutte le pedine della serie':''}.</p></div></div>`}
  if(modal.k==='cls'){const cl=modal.c,d=CLD[cl],lab=clsLabel(cl),u=clsUse(cl),hp=CLHP[cl];
   return `<div class="ovl"><div class="dlg" role="dialog" aria-modal="true"><div class="dlg-h">${zw(avChar({cls:cl},'xl'),PT['c:'+cl],lab)}<span class="dlg-t"><span class="lbl">Classe${d?' · '+h(d.race):''}</span><h2>${h(lab)}</h2></span><button class="ibtn" data-a="mclose" aria-label="Chiudi"><i class="gi gi-close-dialog" style="width:24px;height:24px" aria-hidden="true"></i></button></div>
   <div class="panel"><div class="row" style="align-items:flex-end"><label class="f" style="flex:1 1 14em">Nome della classe<input id="clsn-${h(cl)}" data-clsn="${h(cl)}" value="${h(lab)}" placeholder="${h(cl)}"></label>${lab!==cl?`<button class="btn sm" data-a="clsreset" data-c="${h(cl)}">Nome originale (${h(cl)})</button>`:''}</div>
@@ -1100,7 +1156,7 @@ function modalUI(){
 let pendingFocus=null;
 const isInit=el=>!!(el&&el.classList&&el.classList.contains('init'));
 function nextInit(t){const all=[...document.querySelectorAll('input.init')],n=all[all.indexOf(t)+1];if(n){n.focus();try{n.select()}catch(_){}}else t.blur()}
-document.addEventListener('keydown',e=>{if(e.key==='Escape'&&zoom){zoom=null;render();return}if(e.key==='Escape'&&modal){modal=null;render();return}const t=e.target;
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&zoom){zoom=null;render();return}if(e.key==='Escape'&&modal){modal=modal.prev||null;render();return}const t=e.target;
  if(!/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName||'')&&!modal&&!e.altKey){const k=(e.key||'').toLowerCase();
   if(k==='z'&&!e.shiftKey){e.preventDefault();timeTravel(hist,fut,'Niente da annullare');return}
   if(k==='y'||(k==='z'&&e.shiftKey)){e.preventDefault();timeTravel(fut,hist,'Niente da ripetere');return}
@@ -1138,20 +1194,20 @@ function endRound(){
  toast(ex.length?`Attenzione: ${ex.map(c=>c.name||'un personaggio').join(', ')} non ha carte per giocare né per riposare → sfinito`:`Round ${S.round}: elementi calati, iniziative azzerate`)}
 function rest(i,long){const c=S.chars[i];if(c.discard<2){toast('Servono almeno 2 carte negli scarti per riposare');return}
  c.lost++;c.hand+=c.discard-1;c.discard=0;
- if(long){(c.items||[]).forEach(x=>{if(x.st==='speso')x.st='pronto'});if(!c.cond.includes('veleno'))c.hp=Math.min(c.maxHp,c.hp+2);c.cond=c.cond.filter(x=>!['ferita','fragile','anatema','veleno'].includes(x));toast('Riposo lungo: 1 carta persa a scelta, Cura 2 applicata. Recupera gli oggetti spesi.')}
+ if(long){(c.items||[]).forEach(x=>{if(x.st==='speso')x.st='pronto'});if(!c.cond.includes('veleno'))c.hp=Math.min(c.maxHp,c.hp+2);c.cond=c.cond.filter(x=>isPerm(c,x)||!['ferita','fragile','anatema','veleno'].includes(x));toast('Riposo lungo: 1 carta persa a scelta, Cura 2 applicata. Recupera gli oggetti spesi.')}
  else toast('Riposo breve: perdi 1 carta casuale dagli scarti (1 danno per ripescarla, una volta sola)')}
 const A={
- step(b){const p=b.dataset.p,old=+get(p)||0,v=Math.max(+b.dataset.min,Math.min(+b.dataset.max,old+(+b.dataset.d)));set(p,v);if(v!==old)trackHp(p,v-old);
+ step(b){const p=b.dataset.p,old=+get(p)||0,v=Math.max(+b.dataset.min,Math.min(+b.dataset.max,old+(+b.dataset.d)));{const mc=p.match(/^chars\.(\d+)\.(discard|lost)$/);if(mc&&v!==old){const c=S.chars[mc[1]],dl=v-old;if(dl>0&&(c.hand||0)<dl){toast('Non ci sono carte in mano da spostare');return false}c.hand=(c.hand||0)-dl}}set(p,v);if(v!==old){trackHp(p,v-old);condOnHp(p,v-old)}
   const ml=p.match(/^chars\.(\d+)\.level$/);if(ml)syncHp(S.chars[ml[1]]);if(p==='level')S.mons.forEach(m=>applyStats(m));
   const m=p.match(/^chars\.(\d+)\.hp$/);if(m&&v===0)toast('0 punti ferita: il personaggio è sfinito, a meno che non neghi i danni perdendo carte');
   const mm=p.match(/^chars\.(\d+)\.maxHp$/);if(mm){const c=S.chars[mm[1]];c.hp=Math.min(c.hp,v)}
   if(/^mons\..*\.hp$/.test(p)&&v===0)toast('0 punti ferita: il mostro è morto. Premi «Morto» e lascia un segnalino bottino')},
  el(b){const k=b.dataset.k,s=S.els[k]||0;S.els[k]=s===0?2:s-1},
  goto(b){S.step=+b.dataset.i;if(S.step<3)S.done=[]},
- next(){if(S.step===0)startClock();if(S.step===4)endRound();else{if(S.step===2){const miss=order().filter(e=>e.ini==null);if(miss.length)toast(`Manca l’iniziativa di: ${miss.map(e=>e.name).join(', ')}`)}S.step++;S.done=[];autoDeck()}},
+ next(){if(S.step===0)startClock();if(S.step===4)endRound();else{if(S.step===2){const miss=order().filter(e=>e.ini==null);if(miss.length)toast(`Manca l’iniziativa di: ${miss.map(e=>e.name).join(', ')}`)}S.step++;S.done=[];autoDeck();if(S.step===3)turnStart()}},
  endturn(){const c=current();if(!c)return;const msgs=[];if(c.k==='c')expire(S.chars[c.i],c.name,msgs);else S.mons[c.i].st.forEach(s=>expire(s,`${c.name} ${s.n}`,msgs));
-  S.done.push(c.id);autoDeck();if(msgs.length)toast(msgs.join(' · '));else if(!current())toast('Tutti hanno agito: passa a fine round')},
- tog(b){const id=b.dataset.id,i=S.done.indexOf(id);if(i>=0)S.done.splice(i,1);else S.done.push(id);autoDeck()},
+  S.done.push(c.id);autoDeck();if(msgs.length)toast(msgs.join(' · '));else if(!current())toast('Tutti hanno agito: passa a fine round');turnStart()},
+ tog(b){const id=b.dataset.id,i=S.done.indexOf(id);if(i>=0)S.done.splice(i,1);else S.done.push(id);autoDeck();turnStart()},
  uselv(b){S.level=+b.dataset.v;S.mons.forEach(m=>applyStats(m))},
  dsel(b){S.deckSel=b.dataset.p},
  lootbuild(){buildLoot(S);const dl=$('#d-loot');if(dl&&S.loot.draw.length)dl.open=false;toast(S.loot.draw.length?`Mazzo dei bottini pronto: ${S.loot.draw.length} carte`:'Indica quante carte servono per ogni tipo')},
@@ -1168,7 +1224,12 @@ const A={
  imp(){try{const o=JSON.parse($('#io').value);if(isGHS(o)){S=norm(fromGHS(o));S.tab='salvataggi';toast(ghsMsg);return}if(!o||!Array.isArray(o.chars)||!Array.isArray(o.mons))throw 0;S=norm(o);S.tab='salvataggi';toast('Partita importata')}catch(e){toast('Il testo incollato non è una partita valida');return false}},
  act(b){S.act=b.dataset.id},
  side(b){S.side=b.dataset.v},
- cdel(b){set(b.dataset.p,get(b.dataset.p).filter(c=>c!==b.dataset.c));const o=get(b.dataset.p.replace(/\.cond$/,''));if(o.fresh)o.fresh=o.fresh.filter(c=>c!==b.dataset.c)},
+ cdel(b){const p=b.dataset.p,c=b.dataset.c,o=get(entPath(p));o.cond=o.cond.filter(x=>x!==c);if(o.fresh)o.fresh=o.fresh.filter(x=>x!==c);if(o.perm)o.perm=o.perm.filter(x=>x!==c);if(modal&&modal.k==='cinfo')modal=modal.prev||null},
+ cinfo(b){modal={k:'cinfo',p:b.dataset.p,c:b.dataset.c,prev:modal}},
+ cpick(b){modal={k:'cpick',p:b.dataset.p,pc:b.dataset.pc==='1',prev:modal}},
+ cadd2(b){return addCond(b.dataset.p,b.dataset.c)},
+ cperm(b){const o=get(entPath(b.dataset.p)),c=b.dataset.c;o.perm=o.perm||[];const i=o.perm.indexOf(c);if(i>=0)o.perm.splice(i,1);else o.perm.push(c)},
+ cimm(b){const p=b.dataset.p,c=b.dataset.c,im=immOf(p),i=im.indexOf(c);if(i>=0){im.splice(i,1);toast(`${COND[c].n}: immunità tolta`)}else{im.push(c);const ents=p.startsWith('mons.')?S.mons[+p.split('.')[1]].st:[get(entPath(p))];let rm=0;ents.forEach(o=>{if(o.cond.includes(c)){o.cond=o.cond.filter(x=>x!==c);rm++}});toast(`Immune a ${COND[c].n}${rm?' (condizione tolta)':''}`)}},
  draw(b){if(b.dataset.p)S.deckSel=b.dataset.p;const d=get(S.deckSel),m=+b.dataset.m,c=[draw1(d)];if(c[0]==null)return false;if(m){const x=draw1(d);if(x!=null)c.push(x)}
   let pick=0,amb=false;if(c.length>1){const a=cval(c[0]),z=cval(c[1]);if(a===z)amb=c[0]!==c[1];else pick=(m>0)===(z>a)?1:0}
   d.last={c,pick,mode:m,amb}},
@@ -1195,7 +1256,7 @@ const A={
  delmon(b){if(twice(b,'Conferma eliminazione'))S.mons.splice(+b.dataset.i,1);else return false},
  addst(b){const m=S.mons[+b.dataset.m],e=b.dataset.e==='1';if(m.max&&m.st.length>=m.max){toast('Tutte le pedine di questa serie sono già sulla mappa');return false}let n=1;while(m.st.some(s=>s.n===n))n++;m.st.push({n,e,hp:(e?m.e:m.n).hp,cond:[],seq:S.seq=(S.seq||0)+1})},
  mopen(b){modal={k:b.dataset.k,id:b.dataset.id,s:+b.dataset.s||0}},
- mclose(){modal=null},
+ mclose(){modal=modal&&modal.prev||null},
  clsopen(b){modal={k:'cls',c:b.dataset.c}},
  clsreset(b){delete S.set.clsN[b.dataset.c]},
  monnreset(b){const k=b.dataset.k;delete S.set.monN[k];S.mons.filter(m=>m.key===k).forEach(m=>m.name=MON[k].n)},
@@ -1257,7 +1318,7 @@ function twice(b,msg){if(b.dataset.armed)return true;const o=b.textContent;b.dat
 let hist=[],fut=[];
 function pushHist(before){if(JSON.stringify(S)!==before){hist.push(before);if(hist.length>60)hist.shift();fut=[]}}
 function timeTravel(from,to,msg){if(!from.length){toast(msg);return}to.push(JSON.stringify(S));const t=S.tab;S=JSON.parse(from.pop());S.tab=t;render()}
-document.addEventListener('click',e=>{if(zoom&&e.target.closest&&e.target.closest('.zoom')&&!e.target.closest('[data-a]')){zoom=null;render();return}if(e.target.classList&&e.target.classList.contains('ovl')){modal=null;render();return}
+document.addEventListener('click',e=>{if(zoom&&e.target.closest&&e.target.closest('.zoom')&&!e.target.closest('[data-a]')){zoom=null;render();return}if(e.target.classList&&e.target.classList.contains('ovl')){modal=modal&&modal.prev||null;render();return}
  const nav=e.target.closest('.bnav a');if(nav){if(nav.getAttribute('href')==='#mostri'){const same=location.hash==='#mostri'&&monView;monView=null;detLv=null;if(same){render();scrollTo(0,0)}}return}
  const b=e.target.closest('[data-a]');if(!b)return;if(b!==e.target&&e.target.closest('input,select,textarea'))return;const a=b.dataset.a;
  if(a==='undo')return timeTravel(hist,fut,'Niente da annullare');
@@ -1291,7 +1352,7 @@ document.addEventListener('input',e=>{if(e.target.id==='monq'){monQ=e.target.val
  if(e.target.id!=='q')return;const q=e.target.value.toLowerCase().trim();
  document.querySelectorAll('[data-r]').forEach(r=>r.hidden=q&&!r.textContent.toLowerCase().includes(q));
  document.querySelectorAll('[data-cat]').forEach(c=>c.hidden=![...c.querySelectorAll('[data-r]')].some(r=>!r.hidden))});
-function route(){const k=location.hash.slice(1);if(TABS.some(t=>t[0]===k))S.tab=k;render();}
+function route(){modal=null;zoom=null;const k=location.hash.slice(1);if(TABS.some(t=>t[0]===k))S.tab=k;render();}
 addEventListener('hashchange',()=>{route();scrollTo(0,0)});
 route();
 </script>
