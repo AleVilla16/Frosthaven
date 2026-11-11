@@ -136,6 +136,15 @@ label.f>*{font-size:1rem;color:var(--ink);text-transform:none;letter-spacing:0;f
 .how li::before{content:counter(h);width:22px;height:22px;border-radius:50%;background:var(--frost);color:var(--surface);display:grid;place-items:center;font-size:.8rem;font-weight:700;flex:none}
 /* partita */
 .game{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:16px;align-items:start}
+.game.slim{grid-template-columns:minmax(0,1fr) 240px}
+.game.slim .ini-panel{padding:12px;gap:8px;position:sticky;top:calc(env(safe-area-inset-top,0px) + 92px)}
+.ini-panel .ini-r{padding:6px 8px;gap:8px;flex-wrap:nowrap}
+.ini-panel .nm{flex:1 1 auto}
+.ini-panel .nm b{line-height:1.2}
+.ini-panel .av{width:32px;height:32px}.ini-panel .av svg{width:18px;height:18px}
+.ini-panel input.init{flex:none;width:3em}
+.ini-panel .inum{min-width:1.6em}
+.ini-panel .row.sp{flex-direction:column;align-items:flex-start;gap:2px}
 .col{display:flex;flex-direction:column;gap:16px;min-width:0}
 @media (max-width:860px){.game{grid-template-columns:minmax(0,1fr)}}
 .hero-top{display:flex;gap:14px 24px;align-items:center;flex-wrap:wrap}
@@ -345,7 +354,7 @@ function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random
 const mkDeck=()=>({draw:newDeck(),disc:[],sh:false,last:null});
 function newChar(o={}){return Object.assign({id:nid(),name:'',cls:'',level:1,hp:10,maxHp:10,xp:0,loot:0,init:null,init2:null,rest:false,ex:false,cond:[],hand:10,discard:0,lost:0,summons:[],xpTot:0,gold:30,perks:0,notes:'',res:{},sl:{},fresh:[],deck:mkDeck()},o)}
 function newMon(o={}){return Object.assign({id:nid(),name:'',init:null,n:{hp:5,mov:2,att:2,rng:0,note:''},e:{hp:8,mov:2,att:3,rng:0,note:''},st:[],ally:false,note:''},o)}
-function blank(){return {tab:'partita',round:1,step:0,level:1,els:{},done:[],chars:[],mons:[],decks:{mostri:mkDeck(),alleati:mkDeck()},deckSel:'decks.mostri',loot:{cfg:{},draw:[],disc:[],last:null},set:{diff:0,solo:false,autoexp:true,wake:false,spoil:false},scen:{name:'',note:''},side:'regole',act:'attacco',out:[false,false,false,false,false],camp:{sett:1,morale:0,difesa:0,isp:0,note:''},outcome:'win',sample:false}}
+function blank(){return {tab:'partita',round:1,step:0,level:1,els:{},done:[],chars:[],mons:[],decks:{mostri:mkDeck(),alleati:mkDeck()},deckSel:'decks.mostri',loot:{cfg:{},draw:[],disc:[],last:null},set:{diff:0,solo:false,autoexp:true,wake:false,spoil:false,theme:'dark'},scen:{name:'',note:''},side:'regole',act:'attacco',out:[false,false,false,false,false],camp:{sett:1,morale:0,difesa:0,isp:0,note:''},outcome:'win',sample:false}}
 function sample(){const s=blank();s.sample=true;s.step=3;s.round=2;s.els={fuoco:2,terra:1};
  s.chars=[newChar({name:'Brynja',cls:'Alfiere',hp:8,maxHp:10,init:15,xp:3,loot:1,hand:6,discard:2,cond:['ferita']}),newChar({name:'Corvo',cls:'Ramingo',hp:10,maxHp:10,init:23,hand:8,discard:2,xp:1})];
  addFromDb('Algox Guard',false,s);Object.assign(s.mons[0],{init:55,st:[{n:1,e:true,hp:9,cond:[]},{n:2,e:false,hp:3,cond:['veleno']},{n:4,e:false,hp:7,cond:[]}]});s.scen.name='Partita di esempio';s.loot.cfg={monete:6,legname:2,metallo:2,pelle:2,frecciavite:1,oggetto:1};buildLoot(s);s.chars[0].sl={legname:1};s.deckSel='chars.0.deck';return s}
@@ -448,7 +457,7 @@ function vPartita(){
  const next=S.step===0?'Inizia il round 1':S.step===1?'Carte scelte':S.step===2?'Inizia i turni':S.step===3?'Vai a fine round':S.step===4?`Inizia il round ${S.round+1}`:'';
  let ini='';
  if(S.step>=1&&S.step<=3){
-  ini=`<div class="panel"><div class="row sp"><h2>Iniziativa</h2><span class="muted small">${S.step===3?'Ordine di turno · tocca per segnare fatto':'Scrivi i numeri, Invio per passare al successivo'}</span></div>
+  ini=`<div class="panel ini-panel"><div class="row sp"><h2>Iniziativa</h2><span class="muted small">${S.step===3?'Ordine di turno · tocca per segnare fatto':'Scrivi i numeri, Invio per passare al successivo'}</span></div>
   ${ord.length?`<form class="ini" data-ini novalidate>${ord.map((e,n)=>{const c=e.k==='c'?S.chars[e.i]:null,done=S.step===3&&S.done.includes(e.id),isCur=cur&&cur.id===e.id;const base=c?`chars.${e.i}`:`mons.${e.i}`;
    const edit=S.step<3||e.ini==null,sub=[c&&c.rest?'riposo lungo':'',isCur?'<b style="color:var(--accent)">tocca a lui</b>':'',done?'fatto':''].filter(Boolean).join(' · ');
    return `<div class="ini-r ${isCur?'cur':''} ${done?'done':''} ${edit?'':'tg'}" ${edit?'':`data-a="tog" data-id="${e.id}" role="button" tabindex="0" title="${done?'Tocca per riattivare':'Tocca per segnare fatto'}"`}>${S.step===3?`<span class="ordn">${done?'✓':n+1}</span>`:''}${avatar(e.name,c?'c':e.ally?'a':'m',e.i)}
@@ -469,7 +478,8 @@ function vPartita(){
    <div class="row">${cnt('Esperienza',p+'.xp',c.xp)}${cnt('Monete',p+'.loot',c.loot)}${cnt('Mano',p+'.hand',c.hand)}${cnt('Scarti',p+'.discard',c.discard)}${cnt('Perse',p+'.lost',c.lost)}</div>
    ${condUI(p+'.cond',c.cond,1)}
    ${miniDeck(p+'.deck')}
-   ${S.loot.draw.length||slText(c)?`<div class="row">${S.loot.draw.length?`<button class="btn sm" data-a="lootdraw" data-i="${cur.i}">Pesca una carta bottino</button>`:''}<span class="muted small">${slText(c)}</span></div>`:''}</div>`}
+   ${S.loot.draw.length||slText(c)?`<div class="row">${S.loot.draw.length?`<button class="btn sm" data-a="lootdraw" data-i="${cur.i}">Pesca una carta bottino</button>`:''}<span class="muted small">${slText(c)}</span></div>`:''}
+   <details id="d-turnsheet" open class="mini"><summary>Scheda della campagna</summary><div class="col" style="gap:10px">${campSheet(c,cur.i,'t-')}</div></details></div>`}
   else{const m=S.mons[cur.i];
    turn=`<div class="panel turn"><div class="turn-h">${avatar(cur.name,m.ally?'a':'m',0,'xl')}<span class="tn"><span class="lbl">È il turno di</span><h2>${h(cur.name)}</h2></span><button class="btn pri" data-a="endturn">Fine turno</button></div>
    ${monStats(m)}
@@ -485,12 +495,13 @@ function vPartita(){
   <p class="muted small">Punti ferita, condizioni, carte, mostri sulla mappa, elementi e mazzi vengono rimessi a posto; benedizioni e maledizioni escono dai mazzi.</p></div>`}
  const prep=S.step===0?`<div class="panel"><h2>Prepara lo scenario</h2><p class="muted small">Scrivi il numero dello scenario: l’app aggiunge le sue serie di mostri con le statistiche del livello ${L} e compone il mazzo dei bottini. Le pedine sulla mappa le aggiungi tu dalla sezione Mostri.</p><div class="row"><input id="scnum" placeholder="es. 1, 12, 4A" style="width:9em" aria-label="Numero dello scenario"><button class="btn" data-a="scprep">Prepara</button><a href="#mostri">Vai ai mostri</a></div><div class="row" style="align-items:flex-end"><span class="cnt">Livello dello scenario${stp('level',L,0,7)}</span>${rec!=null&&rec!==L?`<button class="btn sm" data-a="uselv" data-v="${rec}">Usa il consigliato: ${rec}</button>`:rec!=null?'<span class="muted small">È il livello consigliato per i vostri personaggi.</span>':''}</div>${S.mons.length?`<p class="small">Serie in gioco: ${S.mons.map(m=>h(m.name)).join(', ')}.</p>`:''}</div>`:'';
  const field=fieldUI();
- const sd=S.side||'regole';
- const side=`<div class="seg">${[['regole','Regole'],['mazzo','Modificatori'],['bottini','Bottini']].map(([v,l])=>`<button class="${sd===v?'on':''}" data-a="side" data-v="${v}">${l}</button>`).join('')}</div>
- ${sd==='mazzo'?deckUI():sd==='bottini'?lootUI():`<div class="panel" id="rules-panel"><h2>Cosa sto facendo?</h2><div class="chips">${ACTIONS.map(([id,l])=>`<button class="chip ${S.act===id?'on':''}" data-a="act" data-id="${id}">${l}</button>`).join('')}</div>${ruleCard(S.act)}</div>`}`;
+ const sd=S.side==='bottini'?'bottini':'mazzo';
+ const rules=`<div class="panel" id="rules-panel"><h2>Regolamento</h2><div class="chips">${ACTIONS.map(([id,l])=>`<button class="chip ${S.act===id?'on':''}" data-a="act" data-id="${id}">${l}</button>`).join('')}</div>${ruleCard(S.act)}</div>`;
+ const side=`<div class="seg">${[['mazzo','Modificatori'],['bottini','Bottini']].map(([v,l])=>`<button class="${sd===v?'on':''}" data-a="side" data-v="${v}">${l}</button>`).join('')}</div>
+ ${sd==='mazzo'?deckUI():lootUI()}`;
  const dtxt=S.step===0?'Tutto pronto sul tavolo?':S.step===1?'Ognuno sceglie due carte':S.step===2?'Rivelate le carte e scrivete le iniziative':S.step===3?(cur?`Tocca a ${h(cur.name)}`:'Tutti hanno agito'):'Riposi brevi, mazzi, elementi';
  const dock=S.step===5?'':`<div class="dock"><div class="dock-in"><span class="dk"><span class="lbl">Round ${S.round} · ${SHORT[S.step]}</span><b>${dtxt}</b></span><span class="row">${S.step===4?'<button class="btn" data-a="goto" data-i="5">Scenario finito</button>':''}${S.step===3&&cur?'<button class="btn pri big" data-a="endturn">Fine turno</button>':`<button class="btn pri big" data-a="next">${next}</button>`}</span></div></div>`;
- return `${dock}${guide}<div class="game"><div class="col">${hero}${field}${prep}${turn}${end}</div><div class="col">${ini}${side}</div></div>`}
+ return `${dock}${guide}<div class="game slim"><div class="col">${hero}${field}${turn}${rules}${prep}${end}</div><div class="col">${ini}</div></div>`}
 
 function monStats(m){const rows=m.boss?[['n','Boss','']]:[['e','Elite','e'],['n','Normale','']];const cnt=k=>m.boss?m.st.length:m.st.filter(s=>k==='e'?s.e:!s.e).length;
  return `<div class="tblw"><table class="mst"><tr><th></th><th title="Punti ferita massimi">PF</th><th title="Movimento">Mov</th><th title="Attacco">Att</th><th title="Gittata">Gitt</th></tr>${rows.map(([k,l,c])=>{const v=m[k],n=cnt(k),off=n?'':' off';return `<tr class="${v.note?'hn':''}${off}"><td><b${c?' style="color:var(--elite)"':''}>${l}</b> <span class="muted small">×${n}</span></td><td>${h(v.hp??'—')}</td><td>${h(v.mov??'—')}</td><td>${h(v.att??'—')}</td><td>${v.rng?h(v.rng):'—'}</td></tr>${v.note?`<tr class="nt${off}"><td colspan="5">${h(v.note)}</td></tr>`:''}`}).join('')}</table></div><p class="muted small">Valori base del livello ${S.level}: aggiungi i modificatori della carta capacità pescata.</p>`}
@@ -504,6 +515,10 @@ function classSel(p,v){const o=x=>`<option value="${h(x)}" ${x===v?'selected':''
  return `<label class="f">Classe<select id="i-${p.replace(/\./g,'-')}-cls" data-p="${p}.cls"><option value="" ${v?'':'selected'}>Scegli la classe…</option>
  <optgroup label="Classi iniziali">${CLASSI.map(o).join('')}</optgroup><optgroup label="Classi da sbloccare (spoiler)">${CLASSI_SB.map(o).join('')}</optgroup>
  ${v&&!CLHP[v]?`<option value="${h(v)}" selected>${h(v)}</option>`:''}</select></label>`}
+function campSheet(c,i,pre){const p=`chars.${i}`,nx=XPLV[c.level]??null;return `   <div class="row">${inp('Esperienza totale',p+'.xpTot',c.xpTot,'number','min="0"')}${inp('Oro',p+'.gold',c.gold,'number','min="0"')}${cnt('Segni obiettivo',p+'.perks',c.perks,0,18)}</div>
+   <p class="small muted">${nx?(c.xpTot>=nx?`Ha ${c.xpTot} esperienza: può salire al livello ${c.level+1} nella prossima Riorganizzazione.`:`Prossimo livello a ${nx} esperienza (ne mancano ${nx-c.xpTot}).`):'Livello massimo.'} Ogni 3 segni obiettivo: 1 talento. Oggetti piccoli trasportabili: ${Math.ceil(c.level/2)}.</p>
+   <div class="res">${RES.map(([k,n])=>cnt(n,`${p}.res.${k}`,c.res[k]||0)).join('')}</div>
+   <label class="f">Note (talenti, oggetti, missione personale)<textarea data-p="${p}.notes" id="n-${pre}${c.id}">${h(c.notes)}</textarea></label>`}
 function charCard(c,i){const p=`chars.${i}`,nx=XPLV[c.level]??null;
   return `<div class="panel"><div class="card-h">${avatar(c.name||c.cls,'c',i)}${inp('Nome',p+'.name',c.name)}${classSel(p,c.cls)}</div>
   <div class="row"><label class="btn sm">${c.img?'Cambia immagine':'Usa una tua immagine'}<input type="file" accept="image/*" data-img="${p}" hidden></label>${c.img?`<button class="btn sm" data-a="delimg" data-i="${i}">Torna all’icona della classe</button>`:''}</div>
@@ -515,11 +530,7 @@ function charCard(c,i){const p=`chars.${i}`,nx=XPLV[c.level]??null;
   <div class="row">${cnt('Esperienza scenario',p+'.xp',c.xp)}${cnt('Monete raccolte',p+'.loot',c.loot)}<span class="small muted">${slText(c)}</span></div>
   <div><div class="row sp"><b class="small">Evocazioni</b><button class="btn sm" data-a="addsum" data-i="${i}">+ Evocazione</button></div>
   ${c.summons.map((s,si)=>`<div class="row" style="margin-top:6px"><input style="flex:1 1 7em" data-p="${p}.summons.${si}.name" value="${h(s.name)}" placeholder="Nome" aria-label="Nome evocazione">${stp(`${p}.summons.${si}.hp`,s.hp,0,40,'hp')}${['att','mov','rng'].map((f,k)=>`<input type="number" min="0" style="width:3.6em" data-p="${p}.summons.${si}.${f}" value="${h(s[f]??'')}" placeholder="${['Att','Mov','Git'][k]}" title="${['Attacco','Movimento','Gittata'][k]}" aria-label="${['Attacco','Movimento','Gittata'][k]}">`).join('')}<button class="btn sm warn" data-a="delsum" data-i="${i}" data-s="${si}" aria-label="Rimuovi evocazione">×</button></div>`).join('')}</div>
-  <details id="d-sheet-${c.id}"><summary>Scheda della campagna</summary><div class="col" style="gap:10px">
-   <div class="row">${inp('Esperienza totale',p+'.xpTot',c.xpTot,'number','min="0"')}${inp('Oro',p+'.gold',c.gold,'number','min="0"')}${cnt('Segni obiettivo',p+'.perks',c.perks,0,18)}</div>
-   <p class="small muted">${nx?(c.xpTot>=nx?`Ha ${c.xpTot} esperienza: può salire al livello ${c.level+1} nella prossima Riorganizzazione.`:`Prossimo livello a ${nx} esperienza (ne mancano ${nx-c.xpTot}).`):'Livello massimo.'} Ogni 3 segni obiettivo: 1 talento. Oggetti piccoli trasportabili: ${Math.ceil(c.level/2)}.</p>
-   <div class="res">${RES.map(([k,n])=>cnt(n,`${p}.res.${k}`,c.res[k]||0)).join('')}</div>
-   <label class="f">Note (talenti, oggetti, missione personale)<textarea data-p="${p}.notes" id="n-${c.id}">${h(c.notes)}</textarea></label>
+  <details id="d-sheet-${c.id}"><summary>Scheda della campagna</summary><div class="col" style="gap:10px">${campSheet(c,i,'')}
    <div><button class="btn sm warn" data-a="delchar" data-i="${i}">Elimina personaggio</button></div></div></details></div>`}
 function vPersonaggi(){
  return `<div class="row sp"><h2>Personaggi</h2><button class="btn pri" data-a="addchar">+ Personaggio</button></div>
@@ -634,6 +645,7 @@ function vSalva(){const sl=slots(),names=Object.keys(sl).sort((a,b)=>sl[b].t-sl[
  ${names.length?names.map(n=>`<div class="row sp" style="border-top:1px solid var(--line);padding-top:8px"><span style="min-width:0;overflow-wrap:anywhere"><b>${h(n)}</b><br><span class="muted small">${new Date(sl[n].t).toLocaleString('it-IT')}</span></span><span class="row"><button class="btn sm" data-a="slload" data-n="${h(n)}">Carica</button><button class="btn sm warn" data-a="sldel" data-n="${h(n)}">Elimina</button></span></div>`).join(''):'<p class="muted">Nessun salvataggio. La partita in corso viene comunque ricordata da sola su questo dispositivo.</p>'}</div>
  <div class="panel"><h3>Passa la partita a un altro dispositivo</h3><p class="small muted">Esporta copia la partita come testo: incollalo qui sull’altro dispositivo e premi Importa.</p><textarea id="io" aria-label="Testo della partita" placeholder="Incolla qui il testo esportato"></textarea><div class="row"><button class="btn" data-a="exp">Esporta</button><button class="btn" data-a="imp">Importa</button></div></div></div>
  <div class="col"><div class="panel"><h3>Impostazioni</h3>
+ <div class="col" style="gap:6px"><span class="lbl">Tema</span><div class="chips">${[['dark','Scuro'],['light','Chiaro'],['auto','Come il dispositivo']].map(([v,l])=>`<button class="chip ${(st.theme||'dark')===v?'on':''}" data-a="theme" data-v="${v}">${l}</button>`).join('')}</div></div>
  <div class="row">${cnt('Difficoltà','set.diff',(st.diff>0?'+':'')+st.diff,-1,3)}<span class="small muted" style="flex:1 1 12em">Si somma al livello consigliato dello scenario: −1 facile, 0 normale, +1 difficile, +2 molto difficile.</span></div>
  <label class="ob"><input type="checkbox" id="set-solo" data-p="set.solo" ${st.solo?'checked':''}><span><b>Modalità in solitario</b><br><span class="small muted">Aumenta di 1 il livello consigliato (p. 69).</span></span></label>
  <label class="ob"><input type="checkbox" id="set-autoexp" data-p="set.autoexp" ${st.autoexp?'checked':''}><span><b>Scadenza automatica delle condizioni</b><br><span class="small muted">A fine turno l’app toglie le condizioni scadute e applica i 10 danni di Anatema.</span></span></label>
@@ -671,7 +683,10 @@ document.addEventListener('focusin',e=>{const t=e.target;if(!isInit(t))return;ju
 document.addEventListener('pointerup',e=>{const t=e.target;if(isInit(t)&&justFocused===t){justFocused=null;setTimeout(()=>{try{t.select()}catch(_){}},0)}});
 let iniDirty=false;
 document.addEventListener('focusout',e=>{if(!isInit(e.target))return;setTimeout(()=>{if(iniDirty&&!isInit(document.activeElement)){iniDirty=false;render()}},0)});
+function applyTheme(){const t=S.set.theme||'dark',r=document.documentElement;if(t==='auto')r.removeAttribute('data-theme');else r.setAttribute('data-theme',t);
+ const dark=t==='dark'||(t==='auto'&&matchMedia('(prefers-color-scheme: dark)').matches);document.querySelectorAll('meta[name="theme-color"]').forEach(m=>m.setAttribute('content',dark?'#0b141b':'#e9eff4'))}
 function render(){
+ applyTheme();
  const dst={};document.querySelectorAll('details[id]').forEach(d=>dst[d.id]=d.open);
  $('#tabs').innerHTML=TABS.map(([k,n])=>`<a href="#${k}" class="${S.tab===k?'on':''}" ${S.tab===k?'aria-current="page"':''}><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${TABICO[k]}</svg><span>${n}</span></a>`).join('');
  const dl=document.querySelector('.dlg'),dScroll=dl?dl.scrollTop:0;
@@ -719,7 +734,7 @@ const A={
  sldel(b){if(!twice(b,'Conferma'))return false;const sl=slots();delete sl[b.dataset.n];putSlots(sl)},
  exp(){const t=$('#io');t.value=JSON.stringify(S);t.select();if(navigator.clipboard)navigator.clipboard.writeText(t.value).then(()=>toast('Testo copiato'),()=>toast('Testo selezionato: copialo a mano'));else toast('Testo selezionato: copialo a mano');return false},
  imp(){try{const o=JSON.parse($('#io').value);if(!o||!Array.isArray(o.chars)||!Array.isArray(o.mons))throw 0;S=norm(o);S.tab='salvataggi';toast('Partita importata')}catch(e){toast('Il testo incollato non è una partita valida');return false}},
- act(b){S.act=b.dataset.id;S.side='regole'},
+ act(b){S.act=b.dataset.id},
  side(b){S.side=b.dataset.v},
  cdel(b){set(b.dataset.p,get(b.dataset.p).filter(c=>c!==b.dataset.c));const o=get(b.dataset.p.replace(/\.cond$/,''));if(o.fresh)o.fresh=o.fresh.filter(c=>c!==b.dataset.c)},
  draw(b){if(b.dataset.p)S.deckSel=b.dataset.p;const d=get(S.deckSel),m=+b.dataset.m,c=[draw1(d)];if(c[0]==null)return false;if(m){const x=draw1(d);if(x!=null)c.push(x)}
@@ -749,6 +764,7 @@ const A={
  addst(b){const m=S.mons[+b.dataset.m],e=b.dataset.e==='1';if(m.max&&m.st.length>=m.max){toast('Tutte le pedine di questa serie sono già sulla mappa');return false}let n=1;while(m.st.some(s=>s.n===n))n++;m.st.push({n,e,hp:(e?m.e:m.n).hp,cond:[]})},
  mopen(b){modal={k:b.dataset.k,id:b.dataset.id,s:+b.dataset.s||0}},
  mclose(){modal=null},
+ theme(b){S.set.theme=b.dataset.v},
  delimg(b){delete S.chars[+b.dataset.i].img},
  mfull(b){modal=null;monView=b.dataset.v;detLv=null;S.tab='mostri';location.hash='mostri';scrollTo(0,0)},
  stype(b){const m=S.mons.find(x=>x.id===modal.id),s=m.st[modal.s],e=b.dataset.v==='1';if(s.e===e)return false;const full=s.hp>=(s.e?m.e:m.n).hp;s.e=e;const mx=(e?m.e:m.n).hp;s.hp=full?mx:Math.min(s.hp,mx)},
