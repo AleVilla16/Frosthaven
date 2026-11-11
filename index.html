@@ -668,12 +668,14 @@ function condOnHp(p,dl){const m=p.match(/^(chars\.\d+|mons\.\d+\.st\.\d+)\.hp$/)
   const l=['interdizione','fragile','veleno'].filter(c=>o.cond.includes(c)),now=Date.now();
   if(l.length&&!(dmgSeen[ep]&&now-dmgSeen[ep]<15000)){dmgSeen[ep]=now;modal={k:'dmg',p:ep+'.cond',l,prev:modal}}}
  if(msg.length)toast(`${nm}: ${msg.join(' · ')}`)}
+function applyLongRests(){const done=[];S.chars.forEach((c,i)=>{if(c.rest&&!c.rested&&!c.ex){if(c.discard<2){c.rest=false;return}rest(i,true);c.rest=true;c.rested=true;done.push(c.name||c.cls)}});
+ if(done.length)toast(`Riposo lungo applicato: ${done.join(', ')} (1 carta persa, scarti ripresi, Cura 2, oggetti recuperati)`)}
 function turnStart(){const cur=current();if(!cur)return;const key=S.round+':'+cur.id;S.stl=(S.stl||[]).filter(k=>k.startsWith(S.round+':'));if(S.stl.includes(key))return;S.stl.push(key);const msgs=[];
  const ents=cur.k==='c'?[[S.chars[cur.i],cur.name]]:S.mons[cur.i].st.map(s=>[s,`${cur.name} ${s.n}`]);
  ents.forEach(([o,nm])=>{const max=o.maxHp!=null?o.maxHp:((o.e?S.mons[cur.i].e:S.mons[cur.i].n).hp);
   if(o.cond.includes('rigenerazione')){const was=o.hp;o.hp=Math.min(max,o.hp+1);let t=`${nm}: Rigenerazione +${o.hp-was} PF`;if(o.cond.includes('ferita')&&!isPerm(o,'ferita')){o.cond=o.cond.filter(x=>x!=='ferita');t+=', Ferita tolta senza danni'}msgs.push(t)}
   else if(o.cond.includes('ferita')){o.hp=Math.max(0,o.hp-1);msgs.push(`${nm}: Ferita −1 PF${o.hp===0?' (0 PF!)':''}`)}});
- if(msgs.length)toast(msgs.join(' · '))}
+ if(msgs.length){const tt=$('#toast');toast((tt&&!tt.hidden&&/Riposo lungo applicato/.test(tt.textContent)?tt.textContent+' · ':'')+msgs.join(' · '))}}
 function entPath(p){return p.replace(/\.cond$/,'')}
 function immOf(p){const m=p.match(/^mons\.(\d+)/);if(m){const se=S.mons[m[1]];if(!se)return [];if(!se.imm)se.imm=parseImm(se);return se.imm}const c=get(entPath(p));if(!c)return [];if(!c.imm)c.imm=[];return c.imm}
 function parseImm(m){const out=[];[m.n&&m.n.note,m.e&&m.e.note].forEach(t=>{const x=(t||'').match(/Immune a: ([^;]*)/);if(x)x[1].split(',').forEach(w=>{const k=Object.keys(COND).find(k=>COND[k].n.toLowerCase()===w.trim().toLowerCase());if(k&&!out.includes(k))out.push(k)})});return out}
@@ -796,7 +798,7 @@ function vPartita(){
    turn=`<div class="panel turn"><div class="turn-h">${zw(avatar(cur.name,'c',cur.i,'xl'),!c.img&&PT['c:'+c.cls],cur.name)}<span class="tn"><span class="lbl">È il turno di</span><h2>${h(cur.name)}</h2></span><button class="btn pri" data-a="endturn">Fine turno</button></div>
    ${c.summons.length?`<div class="note">Prima agiscono le sue evocazioni, in ordine: ${c.summons.map(s=>h(s.name||'evocazione')).join(', ')}.</div>`:''}
    ${condNotes(c)}
-   ${c.rest?`<div class="note">${GI('recover')} Riposo lungo già applicato con la spunta RL: 1 carta persa (scegliete quale tra gli scarti), le altre riprese in mano, Cura 2 e oggetti spesi recuperati. In questo turno non fa altro.</div>`
+   ${c.rest?`<div class="note">${GI('recover')} Riposo lungo già applicato all’inizio dei turni: 1 carta persa (scegliete quale tra gli scarti), le altre riprese in mano, Cura 2 e oggetti spesi recuperati. In questo turno non fa altro.</div>`
      :'<div class="note">Azione superiore di una carta + azione inferiore dell’altra. A fine turno: saccheggia il tuo esagono, gli elementi infusi diventano forti.</div>'}
    <div class="row">${cnt('<span class="cl">'+CI('health')+'Punti ferita</span>',p+'.hp',c.hp,0,c.maxHp,'hp')}<span style="flex:1 1 120px;align-self:flex-end;padding-bottom:12px">${hpbar(c.hp,c.maxHp,'w')}</span></div>
    <div class="row">${cnt('<span class="cl">'+CI('experience')+'Esperienza</span>',p+'.xp',c.xp)}${cnt('<span class="cl">'+GI('loot')+'Monete</span>',p+'.loot',c.loot)}${cnt('Mano',p+'.hand',c.hand)}${cnt('Scarti',p+'.discard',c.discard)}${cnt('Perse',p+'.lost',c.lost)}</div>
@@ -1217,8 +1219,8 @@ const A={
   const mm=p.match(/^chars\.(\d+)\.maxHp$/);if(mm){const c=S.chars[mm[1]];c.hp=Math.min(c.hp,v)}
   if(/^mons\..*\.hp$/.test(p)&&v===0)toast('0 punti ferita: il mostro è morto. Premi «Morto» e lascia un segnalino bottino')},
  el(b){const k=b.dataset.k,s=S.els[k]||0;S.els[k]=s===0?2:s-1},
- goto(b){S.step=+b.dataset.i;if(S.step<3)S.done=[]},
- next(){if(S.step===0)startClock();if(S.step===4)endRound();else{if(S.step===2){const miss=order().filter(e=>e.ini==null);if(miss.length)toast(`Manca l’iniziativa di: ${miss.map(e=>e.name).join(', ')}`)}S.step++;S.done=[];autoDeck();if(S.step===3)turnStart()}},
+ goto(b){const was=S.step;S.step=+b.dataset.i;if(S.step<3)S.done=[];if(S.step===3&&was<3){applyLongRests();turnStart()}},
+ next(){if(S.step===0)startClock();if(S.step===4)endRound();else{if(S.step===2){const miss=order().filter(e=>e.ini==null);if(miss.length)toast(`Manca l’iniziativa di: ${miss.map(e=>e.name).join(', ')}`)}S.step++;S.done=[];if(S.step===3)applyLongRests();autoDeck();if(S.step===3)turnStart()}},
  endturn(){const c=current();if(!c)return;const msgs=[];if(c.k==='c')expire(S.chars[c.i],c.name,msgs);else S.mons[c.i].st.forEach(s=>expire(s,`${c.name} ${s.n}`,msgs));
   S.done.push(c.id);autoDeck();if(msgs.length)toast(msgs.join(' · '));else if(!current())toast('Tutti hanno agito: passa a fine round');turnStart()},
  tog(b){const id=b.dataset.id,i=S.done.indexOf(id);if(i>=0)S.done.splice(i,1);else S.done.push(id);autoDeck();turnStart()},
@@ -1356,8 +1358,8 @@ document.addEventListener('change',e=>{const t=e.target;
  else{const v=t.type==='checkbox'?t.checked:t.type==='number'?(t.value===''?null:+t.value):t.value;set(t.dataset.p,v);if(t.dataset.p==='set.wake')applyWake();
   const mlv=t.dataset.p.match(/^mons\.(\d+)\.lv$/);if(mlv){const m=S.mons[mlv[1]];m.lv=t.value===''?null:+t.value;applyStats(m)}
   if(/^chars\.\d+\.absent$/.test(t.dataset.p))S.mons.forEach(m=>applyStats(m));
-  const mi=t.dataset.p.match(/^chars\.(\d+)\.init$/);if(mi){const c=S.chars[mi[1]];const can=v===99&&(c.discard>=2||c.rested);if(can&&!c.rested){rest(+mi[1],true);c.rested=true}if(!can)c.rested=false;c.rest=can;if(v===99&&c.discard<2)toast(`${c.name||c.cls}: niente riposo lungo, servono almeno 2 carte negli scarti`)}
-  const mr=t.dataset.p.match(/^chars\.(\d+)\.rest$/);if(mr){const i=+mr[1],c=S.chars[i];if(v){c.init=99;if(!c.rested){c.rest=false;rest(i,true);c.rest=true;c.rested=true}}else{if(c.init===99)c.init=null;if(c.rested)toast('Riposo lungo tolto. Per riavere carte e punti ferita di prima usa la freccia «annulla» in alto.');c.rested=false}}
+  const mi=t.dataset.p.match(/^chars\.(\d+)\.init$/);if(mi){const c=S.chars[mi[1]];const can=v===99&&(c.discard>=2||c.rested);c.rest=can;if(v===99&&c.discard<2)toast(`${c.name||c.cls}: niente riposo lungo, servono almeno 2 carte negli scarti`)}
+  const mr=t.dataset.p.match(/^chars\.(\d+)\.rest$/);if(mr){const c=S.chars[mr[1]];if(v){c.init=99}else{if(c.init===99)c.init=null;if(c.rested)toast('Riposo lungo tolto. Per riavere carte e punti ferita di prima usa la freccia «annulla» in alto.')}}
   const ms=t.dataset.p.match(/^mons\.(\d+)\.st\.(\d+)\.n$/);if(ms){const m=S.mons[ms[1]];if(m.st.filter(x=>x.n===v).length>1)toast(`Il numero ${v} è già usato da un’altra pedina di ${m.name}`)}const mc=t.dataset.p.match(/^chars\.(\d+)\.cls$/);if(mc)syncHp(S.chars[mc[1]])}
  pushHist(before);
  if(t.tagName==='TEXTAREA'){save();return}
