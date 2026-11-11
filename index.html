@@ -101,6 +101,18 @@ h2{font-size:1.3rem} h3{font-size:1.05rem}
 .item-r select.st-speso{color:var(--warn)}.item-r select.st-perso{color:var(--bad)}
 .clockw{display:flex;align-items:center;gap:8px}.clockw b{font-size:1.25rem;font-variant-numeric:tabular-nums;min-width:3.6em}
 .ibtn.sm{width:32px;height:32px;box-shadow:none}
+.mrows{display:flex;flex-direction:column}
+.mrow{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 12px;padding:8px 0;border-bottom:1px solid var(--line)}
+.mrow:last-child{border-bottom:0}
+.mrow.on .mrow-n b{color:var(--frost)}
+.mrow-n{display:flex;align-items:center;gap:10px;background:none;border:0;padding:0;cursor:pointer;color:inherit;font:inherit;text-align:left;min-width:0;flex:1 1 200px}
+.mrow-n>span{display:flex;flex-direction:column;min-width:0;overflow-wrap:anywhere}.mrow-n small{color:var(--muted);font-size:.8rem}
+.mrow-n:hover b{text-decoration:underline}
+.mrow-a{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.mrow-a .mlv{font-size:.88rem;padding:4px 6px;max-width:11em}
+.btn.elite{border-color:var(--elite);color:var(--elite)}
+@media (max-width:520px){.mrow-a{flex-wrap:nowrap;gap:4px;width:100%;justify-content:flex-start}.mrow-a .mlv{max-width:5.6em;font-size:.8rem;padding:4px 2px}.mrow-a .btn.sm{padding:3px 7px;font-size:.8rem}}
+.btn[disabled]{opacity:.4;cursor:default}
 .mlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,180px),1fr));gap:6px}
 .mlist-i{display:flex;justify-content:space-between;align-items:center;gap:8px;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 12px;font-weight:600;cursor:pointer;min-width:0;overflow-wrap:anywhere}
 .mlist-i::after{content:'›';color:var(--muted);font-size:1.2rem;line-height:1}
@@ -149,6 +161,7 @@ label.f>*{font-size:1rem;color:var(--ink);text-transform:none;letter-spacing:0;f
 /* partita */
 .game{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:16px;align-items:start}
 .game.slim{grid-template-columns:minmax(0,1fr) 240px}
+.kvg{display:grid;grid-template-columns:1fr 1fr;gap:10px}.kvg .kv b{font-size:1.05rem;text-transform:none}.scen-panel{padding:12px;gap:10px}.scen-panel textarea{min-height:70px}
 .game.slim .ini-panel{padding:12px;gap:8px;position:sticky;top:calc(env(safe-area-inset-top,0px) + 92px)}
 .ini-panel .ini-r{padding:6px 8px;gap:8px;flex-wrap:nowrap}
 .ini-panel .nm{flex:1 1 auto}
@@ -664,8 +677,8 @@ function vPartita(){
   <div class="row"><div class="els">${ELS.map(([k,n])=>{const s=S.els[k]||0;return `<button class="el" style="--c:var(--el-${k})" data-s="${s}" data-a="el" data-k="${k}" title="Tocca: inerte → forte → debole → inerte"><span class="disc"><i class="ci ci-el-${k}" aria-hidden="true"></i></span>${n}<i>${ELST[s]}</i></button>`}).join('')}</div><span class="muted small" style="flex:1 1 12em">Tocca un elemento per infonderlo o consumarlo. A fine round calano da soli.</span></div>
   <details id="d-scen"><summary>Scenario${S.scen.name?': '+h(S.scen.name):''} · livello ${L}</summary><div class="col" style="gap:12px">
    <div class="row" style="align-items:flex-end">${inp('Scenario','scen.name',S.scen.name,'text','placeholder="Numero o nome"')}<span class="cnt">Livello scenario${stp('level',L,0,7)}</span>${rec!=null&&rec!==L?`<button class="btn sm" data-a="uselv" data-v="${rec}">Usa il consigliato: ${rec}</button>`:''}</div>
-   <div class="status"><span class="kv"><span>${GI('trap')}Trappole</span><b>${LV.trap[L]} danni</b></span><span class="kv"><span>${GI('terrain')}Terreno pericoloso</span><b>${LV.haz[L]}</b></span><span class="kv"><span>${GI('loot')}Oro per moneta</span><b>×${LV.conv[L]}</b></span><span class="kv"><span>${CI('experience')}Esperienza bonus</span><b>+${LV.xp[L]}</b></span></div>
-   <label class="f">Regole speciali e note<textarea id="scen-note" data-p="scen.note" placeholder="Regole speciali, sezioni da leggere, obiettivo…">${h(S.scen.note)}</textarea></label></div></details></div>`;
+   
+   </div></details></div>`;
  const next=S.step===0?'Inizia il round 1':S.step===1?'Carte scelte':S.step===2?'Inizia i turni':S.step===3?'Vai a fine round':S.step===4?`Inizia il round ${S.round+1}`:'';
  let ini='';
  if(S.step>=1&&S.step<=3){
@@ -707,13 +720,14 @@ function vPartita(){
   <p class="muted small">Punti ferita, condizioni, carte, mostri sulla mappa, elementi e mazzi vengono rimessi a posto; benedizioni e maledizioni escono dai mazzi.</p></div>`}
  const prep=S.step===0?`<div class="panel"><h2>Prepara lo scenario</h2><p class="muted small">Scrivi il numero dello scenario: l’app aggiunge le sue serie di mostri con le statistiche del livello ${L} e compone il mazzo dei bottini. Le pedine sulla mappa le aggiungi tu dalla sezione Mostri.</p><div class="row"><input id="scnum" placeholder="es. 1, 12, 4A" style="width:9em" aria-label="Numero dello scenario"><button class="btn" data-a="scprep">Prepara</button><a href="#mostri">Vai ai mostri</a></div><div class="row" style="align-items:flex-end"><span class="cnt">Livello dello scenario${stp('level',L,0,7)}</span>${rec!=null&&rec!==L?`<button class="btn sm" data-a="uselv" data-v="${rec}">Usa il consigliato: ${rec}</button>`:rec!=null?'<span class="muted small">È il livello consigliato per i vostri personaggi.</span>':''}</div>${S.mons.length?`<p class="small">Serie in gioco: ${S.mons.map(m=>h(m.name)).join(', ')}.</p>`:''}</div>`:'';
  const field=fieldUI();
+ const scenP=`<div class="panel scen-panel"><h2>${S.scen.name?h(S.scen.name):'Scenario'} <span class="pg">livello ${L}</span></h2><div class="kvg"><span class="kv"><span>${GI('trap')}Trappole</span><b>${LV.trap[L]} danni</b></span><span class="kv"><span>${GI('terrain')}Terreno pericoloso</span><b>${LV.haz[L]}</b></span><span class="kv"><span>${GI('loot')}Oro per moneta</span><b>×${LV.conv[L]}</b></span><span class="kv"><span>${CI('experience')}Esperienza bonus</span><b>+${LV.xp[L]}</b></span></div><label class="f">Regole speciali e note<textarea id="scen-note" data-p="scen.note" placeholder="Regole speciali, sezioni da leggere, obiettivo…">${h(S.scen.note)}</textarea></label></div>`;
  const sd=S.side==='bottini'?'bottini':'mazzo';
  const rules=`<div class="panel" id="rules-panel"><h2>Regolamento</h2><div class="chips">${ACTIONS.map(([id,l])=>`<button class="chip ${S.act===id?'on':''}" data-a="act" data-id="${id}">${ACT_IC[id]||''}${l}</button>`).join('')}</div>${ruleCard(S.act)}</div>`;
  const side=`<div class="seg">${[['mazzo','Modificatori'],['bottini','Bottini']].map(([v,l])=>`<button class="${sd===v?'on':''}" data-a="side" data-v="${v}">${l}</button>`).join('')}</div>
  ${sd==='mazzo'?deckUI():lootUI()}`;
  const dtxt=S.step===0?'Tutto pronto sul tavolo?':S.step===1?'Ognuno sceglie due carte':S.step===2?'Rivelate le carte e scrivete le iniziative':S.step===3?(cur?`Tocca a ${h(cur.name)}`:'Tutti hanno agito'):'Riposi brevi, mazzi, elementi';
  const dock=S.step===5?'':`<div class="dock"><div class="dock-in"><span class="dk"><span class="lbl">Round ${S.round} · ${SHORT[S.step]}</span><b>${dtxt}</b></span><span class="row"><button class="ibtn" data-a="undo" aria-label="Annulla l’ultima mossa" title="Annulla l’ultima mossa"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>${S.step===4?'<button class="btn" data-a="goto" data-i="5">Scenario finito</button>':''}${S.step===3&&cur?'<button class="btn pri big" data-a="endturn">Fine turno</button>':`<button class="btn pri big" data-a="next">${next}</button>`}</span></div></div>`;
- return `${dock}${guide}<div class="game slim"><div class="col">${hero}${field}${turn}${rules}${prep}${end}</div><div class="col">${ini}</div></div>`}
+ return `${dock}${guide}<div class="game slim"><div class="col">${hero}${field}${turn}${rules}${prep}${end}</div><div class="col">${scenP}${ini}</div></div>`}
 
 function monStats(m){const rows=m.boss?[['n','Boss','']]:[['e','Elite','e'],['n','Normale','']];const cnt=k=>m.boss?m.st.length:m.st.filter(s=>k==='e'?s.e:!s.e).length;
  return `<div class="tblw"><table class="mst"><tr><th></th><th>${CI('health','Punti ferita')}</th><th>${GI('move','Movimento')}</th><th>${GI('attack','Attacco')}</th><th>${GI('range','Gittata')}</th></tr>${rows.map(([k,l,c])=>{const v=m[k],n=cnt(k),off=n?'':' off';return `<tr class="${v.note?'hn':''}${off}"><td><b${c?' style="color:var(--elite)"':''}>${l}</b> <span class="muted small">×${n}</span></td><td>${h(v.hp??'—')}</td><td>${h(v.mov??'—')}</td><td>${h(v.att??'—')}</td><td>${v.rng?h(v.rng):'—'}</td></tr>${v.note?`<tr class="nt${off}"><td colspan="5">${noteH(v.note)}</td></tr>`:''}`}).join('')}</table></div><p class="muted small">Valori base del livello ${S.level}: aggiungi i modificatori della carta capacità pescata.</p>`}
@@ -770,17 +784,28 @@ function seriesCard(m,i){
   ${m.key&&MON[m.key]?`<span class="muted small">${MON[m.key].en?h(MON[m.key].en)+' · ':''}dal catalogo, livello ${m.lv??S.level}${m.max?` · ${m.max} pedine al massimo`:''}</span><label class="f" style="width:min(100%,20em)"><span class="cl">${GI('level')}Livello di questa serie</span><select id="lv-${m.id}" data-p="mons.${i}.lv"><option value="" ${m.lv==null?'selected':''}>Come lo scenario (${S.level})</option>${[0,1,2,3,4,5,6,7].map(l=>`<option value="${l}" ${m.lv===l?'selected':''}>Livello ${l}</option>`).join('')}</select></label>`:''}<div class="tblw"><table><tr><th></th><th>${CI('health','Punti ferita')}</th><th>${GI('move','Movimento')}</th><th>${GI('attack','Attacco')}</th><th>${GI('range','Gittata')}</th></tr>${m.boss?statRow(i,'n','Boss'):statRow(i,'n','Normale')+statRow(i,'e','Elite')}</table></div>${(m.boss?[['n','Abilità e immunità']]:[['n','Abilità dei normali'],['e','Abilità degli elite']]).map(([k,l])=>`<label class="f">${l}<input id="ab-${m.id}-${k}" data-p="mons.${i}.${k}.note" value="${h(m[k].note)}" placeholder="Scudo 1, Ritorsione 2…"></label>`).join('')}
   <div class="row">${m.boss?`<button class="btn sm" data-a="addst" data-m="${i}" data-e="0">+ Boss</button>`:`<button class="btn sm" data-a="addst" data-m="${i}" data-e="0">+ Normale</button><button class="btn sm" data-a="addst" data-m="${i}" data-e="1">+ Elite</button>`}<span class="muted small">${m.st.length} sulla mappa</span></div>
   ${standees(i)}<label class="f">Note<textarea id="mn-${m.id}" data-p="mons.${i}.note" placeholder="Regole speciali, carta capacità pescata…">${h(m.note)}</textarea></label><div class="row sp"><label class="small"><input type="checkbox" data-p="mons.${i}.ally" ${m.ally?'checked':''}> alleati dello scenario (usano il mazzo degli alleati)</label><button class="btn sm warn" data-a="delmon" data-i="${i}">Elimina serie</button></div></div>`}
+let pendLv={},monQ='';
+function mrow(k,m){const d=k?MON[k]:null;m=m||(k?S.mons.find(x=>x.key===k):null);const name=d?monName(k):(m.name||'Mostro personalizzato');
+ const st=m?m.st:[],ne=st.filter(x=>x.e).length,nn=st.length-ne,lv=m?m.lv:(pendLv[k]??null),boss=d?!!d.b:!!(m&&m.boss),id=k?`data-k="${h(k)}"`:`data-id="${m.id}"`;
+ const info=st.length?(boss?`${st.length} in campo`:[nn?`${nn} normal${nn===1?'e':'i'}`:'',ne?`${ne} élite`:''].filter(Boolean).join(' · ')+' in campo'):'';
+ return `<div class="mrow ${st.length?'on':''}" data-q="${h((name+' '+(d&&d.en||'')).toLowerCase())}">
+ <button class="mrow-n" data-a="monview" data-v="${k?'k:'+h(k):'s:'+m.id}">${avatar(name,m&&m.ally?'a':'m',0,'',k||undefined)}<span><b>${h(name)}</b>${info?`<small>${info}</small>`:''}</span></button>
+ <div class="mrow-a">${d?`<select class="mlv" data-mlv ${id} aria-label="Livello di ${h(name)}"><option value="" ${lv==null?'selected':''}>Liv. ${S.level} (scenario)</option>${[0,1,2,3,4,5,6,7].map(l=>`<option value="${l}" ${lv===l?'selected':''}>Livello ${l}</option>`).join('')}</select>`:''}
+ ${boss?`<button class="btn sm" data-a="qadd" ${id} data-e="0">Boss</button>`:`<button class="btn sm" data-a="qadd" ${id} data-e="0">Normale</button><button class="btn sm elite" data-a="qadd" ${id} data-e="1">Élite</button>`}
+ <button class="btn sm warn" data-a="qdel" ${id} ${st.length?'':'disabled'}>Elimina mostro</button></div></div>`}
 function vMostri(){
  if(monView)return vMonDetail(monView);
  const all=Object.keys(MON).sort((a,b)=>monName(a).localeCompare(monName(b),'it'));
- const reg=all.filter(k=>!MON[k].h&&!MON[k].b),spec=all.filter(k=>MON[k].h||MON[k].b);
- const item=k=>`<button class="mlist-i ${S.mons.some(m=>m.key===k)?'on':''}" data-a="monview" data-v="k:${h(k)}" data-q="${h((monName(k)+' '+(MON[k].en||'')).toLowerCase())}">${h(monName(k))}</button>`;
+ const reg=all.filter(k=>!MON[k].h&&!MON[k].b),spec=all.filter(k=>MON[k].h||MON[k].b),custom=S.mons.filter(m=>!m.key);
  return `<div class="row sp"><h2>Mostri</h2><button class="btn" data-a="addmon">+ Mostro personalizzato</button></div>
- ${S.mons.length?`<div class="panel"><h3>In questa partita</h3><div class="mlist">${S.mons.map(m=>`<button class="mlist-i on" data-a="monview" data-v="s:${m.id}">${h(m.name||'Senza nome')} · ${m.st.length} ${m.st.length===1?'pedina':'pedine'}</button>`).join('')}</div></div>`:''}
+ ${custom.length?`<div class="panel"><h3>Mostri personalizzati</h3><div class="mrows">${custom.map(m=>mrow(null,m)).join('')}</div></div>`:''}
  <div class="panel"><div class="row sp"><h3>Tutti i mostri <span class="pg">${reg.length}</span></h3><input type="search" id="monq" placeholder="Cerca un mostro" style="flex:1 1 12em;max-width:320px" aria-label="Cerca un mostro"></div>
- <div class="mlist" data-ml>${reg.map(item).join('')}</div><p class="muted small" id="monq-none" hidden>Nessun mostro con questo nome.</p></div>
- <details class="panel" id="d-spoil"><summary>${GI('lock')} Boss e mostri speciali (spoiler) · ${spec.length}</summary><div class="mlist" data-ml>${spec.map(item).join('')}</div></details>
- <p class="muted small">Statistiche dal progetto open source X-haven Assistant (AGPL-3.0).</p>`}
+ <div class="mrows" data-ml>${reg.map(k=>mrow(k)).join('')}</div><p class="muted small" id="monq-none" hidden>Nessun mostro con questo nome.</p></div>
+ <details class="panel" id="d-spoil"><summary>${GI('lock')} Boss e mostri speciali (spoiler) · ${spec.length}</summary><div class="mrows" data-ml>${spec.map(k=>mrow(k)).join('')}</div></details>
+ <p class="muted small">Tocca il nome per vedere statistiche e pedine. Statistiche dal progetto open source X-haven Assistant (AGPL-3.0).</p>`}
+function applyMonQ(){const i=$('#monq');if(!i)return;if(i.value!==monQ)i.value=monQ;const q=monQ.toLowerCase().trim();let n=0;
+ document.querySelectorAll('[data-ml] .mrow').forEach(r=>{r.hidden=!!q&&!r.dataset.q.includes(q);if(!r.hidden&&!r.closest('details'))n++});
+ const sp=$('#d-spoil');if(sp&&q)sp.open=[...sp.querySelectorAll('.mrow')].some(r=>!r.hidden);$('#monq-none').hidden=!q||n>0||!!(sp&&sp.open)}
 function vMonDetail(v){
  const isS=v.startsWith('s:'),id=v.slice(2);let key=isS?null:id;
  let mi=isS?S.mons.findIndex(m=>m.id===id):S.mons.findIndex(m=>m.key===key);
@@ -1007,6 +1032,7 @@ function render(){
  $('#app').innerHTML=({partita:vPartita,personaggi:vPersonaggi,mostri:vMostri,avamposto:vAvamposto,regole:vRegole,salvataggi:vSalva})[S.tab]();
  $('#modal').innerHTML=modalUI();const dl2=document.querySelector('.dlg');if(dl2){dl2.scrollTop=dScroll;document.body.style.overflow='hidden'}else document.body.style.overflow='';
  for(const id in dst){const d=document.getElementById(id);if(d)d.open=dst[id]}
+ applyMonQ();
  if(pendingFocus!=null){const n=document.querySelectorAll('input.init')[pendingFocus];if(n){n.focus();n.select()}pendingFocus=null}
  save()}
 
@@ -1075,9 +1101,16 @@ const A={
  detlv(b){detLv=+b.dataset.v},
  dbaddk(b){if(addFromDb(b.dataset.k))toast(`${monName(b.dataset.k)} aggiunto alla partita: statistiche di livello ${S.level}`);else return false},
  delmon(b){if(twice(b,'Conferma eliminazione'))S.mons.splice(+b.dataset.i,1);else return false},
- addst(b){const m=S.mons[+b.dataset.m],e=b.dataset.e==='1';if(m.max&&m.st.length>=m.max){toast('Tutte le pedine di questa serie sono già sulla mappa');return false}let n=1;while(m.st.some(s=>s.n===n))n++;m.st.push({n,e,hp:(e?m.e:m.n).hp,cond:[]})},
+ addst(b){const m=S.mons[+b.dataset.m],e=b.dataset.e==='1';if(m.max&&m.st.length>=m.max){toast('Tutte le pedine di questa serie sono già sulla mappa');return false}let n=1;while(m.st.some(s=>s.n===n))n++;m.st.push({n,e,hp:(e?m.e:m.n).hp,cond:[],seq:S.seq=(S.seq||0)+1})},
  mopen(b){modal={k:b.dataset.k,id:b.dataset.id,s:+b.dataset.s||0}},
  mclose(){modal=null},
+ qadd(b){const k=b.dataset.k,e=b.dataset.e==='1';let m=k?S.mons.find(x=>x.key===k):S.mons.find(x=>x.id===b.dataset.id);
+  if(!m&&k){m=addFromDb(k,false);if(!m)return false;if(pendLv[k]!=null){m.lv=pendLv[k];applyStats(m)}delete pendLv[k]}
+  if(!m)return false;if(m.max&&m.st.length>=m.max){toast(`${m.name}: tutte le ${m.max} pedine sono già in campo`);return false}
+  let n=1;while(m.st.some(x=>x.n===n))n++;m.st.push({n,e:e&&!m.boss,hp:(e?m.e:m.n).hp,cond:[],seq:S.seq=(S.seq||0)+1});
+  toast(`${m.name} ${n} ${m.boss?'(boss)':e?'élite':'normale'} aggiunto in campo`)},
+ qdel(b){const m=b.dataset.k?S.mons.find(x=>x.key===b.dataset.k):S.mons.find(x=>x.id===b.dataset.id);if(!m||!m.st.length)return false;
+  let i=m.st.length-1,best=-1;m.st.forEach((x,j)=>{if((x.seq||0)>best){best=x.seq||0;i=j}});const x=m.st.splice(i,1)[0];toast(`${m.name} ${x.n} ${x.e?'élite':'normale'} tolto dal campo`)},
  fs(){const d=document;try{if(d.fullscreenElement)d.exitFullscreen();else d.documentElement.requestFullscreen().catch(()=>toast('Questo browser non permette lo schermo intero'))}catch(_){toast('Questo browser non permette lo schermo intero')}return false},
  clock(){S.clock.run?stopClock():startClock()},
  additem(b){S.chars[+b.dataset.i].items.push({n:'',slot:'piccolo',st:'pronto'})},
@@ -1128,6 +1161,8 @@ document.addEventListener('click',e=>{if(e.target.classList&&e.target.classList.
  if(a==='redo')return timeTravel(fut,hist,'Niente da ripetere');
  const before=JSON.stringify(S),keep=fut;if(A[a](b)!==false){pushHist(before);render()}});
 document.addEventListener('change',e=>{const t=e.target;
+ if(t.dataset.mlv!==undefined){const before=JSON.stringify(S),v=t.value===''?null:+t.value,k=t.dataset.k,m=k?S.mons.find(x=>x.key===k):S.mons.find(x=>x.id===t.dataset.id);
+  if(m){m.lv=v;applyStats(m);pushHist(before);toast(`${m.name}: statistiche di livello ${v??S.level}`)}else if(k){if(v==null)delete pendLv[k];else pendLv[k]=v}render();return}
  if(t.dataset.ghs!==undefined){const file=t.files&&t.files[0];if(!file)return;file.text().then(txt=>{let g;try{g=JSON.parse(txt)}catch(_){toast('Il file non è un JSON valido');return}
   if(!isGHS(g)){toast('Questo file non sembra un salvataggio di Gloomhaven Secretariat');return}const before=JSON.stringify(S);S=norm(fromGHS(g));S.tab='salvataggi';pushHist(before);render();toast(ghsMsg)}).catch(()=>toast('Non riesco a leggere il file'));t.value='';return}
  if(t.dataset.img){const file=t.files&&t.files[0];if(!file)return;const path=t.dataset.img,url=URL.createObjectURL(file),im=new Image();
@@ -1145,7 +1180,7 @@ document.addEventListener('change',e=>{const t=e.target;
  if(t.tagName==='TEXTAREA'){save();return}
  if(isInit(t)&&S.step<3){save();iniDirty=true;const row=t.closest('.ini-r'),c=t.dataset.p.match(/^chars\.(\d+)\.init$/);if(row&&c){const nm=row.querySelector('.nm');let sb=nm.querySelector('.sub');if(S.chars[c[1]].rest){if(!sb){sb=document.createElement('span');sb.className='sub';nm.appendChild(sb)}sb.textContent='riposo lungo'}else if(sb&&sb.textContent==='riposo lungo')sb.remove()}return}
  render()});
-document.addEventListener('input',e=>{if(e.target.id==='monq'){const q=e.target.value.toLowerCase().trim();let n=0;document.querySelectorAll('[data-ml] .mlist-i').forEach(b=>{b.hidden=q&&!b.dataset.q.includes(q);if(!b.hidden&&b.closest('details')===null)n++});const sp=$('#d-spoil');if(sp&&q)sp.open=[...sp.querySelectorAll('.mlist-i')].some(b=>!b.hidden);$('#monq-none').hidden=!q||n>0||(sp&&sp.open);return}
+document.addEventListener('input',e=>{if(e.target.id==='monq'){monQ=e.target.value;applyMonQ();return}
  if(e.target.id!=='q')return;const q=e.target.value.toLowerCase().trim();
  document.querySelectorAll('[data-r]').forEach(r=>r.hidden=q&&!r.textContent.toLowerCase().includes(q));
  document.querySelectorAll('[data-cat]').forEach(c=>c.hidden=![...c.querySelectorAll('[data-r]')].some(r=>!r.hidden))});
