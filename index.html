@@ -785,19 +785,25 @@ function seriesCard(m,i){
   <div class="row">${m.boss?`<button class="btn sm" data-a="addst" data-m="${i}" data-e="0">+ Boss</button>`:`<button class="btn sm" data-a="addst" data-m="${i}" data-e="0">+ Normale</button><button class="btn sm" data-a="addst" data-m="${i}" data-e="1">+ Elite</button>`}<span class="muted small">${m.st.length} sulla mappa</span></div>
   ${standees(i)}<label class="f">Note<textarea id="mn-${m.id}" data-p="mons.${i}.note" placeholder="Regole speciali, carta capacità pescata…">${h(m.note)}</textarea></label><div class="row sp"><label class="small"><input type="checkbox" data-p="mons.${i}.ally" ${m.ally?'checked':''}> alleati dello scenario (usano il mazzo degli alleati)</label><button class="btn sm warn" data-a="delmon" data-i="${i}">Elimina serie</button></div></div>`}
 let pendLv={},monQ='';
-function mrow(k,m){const d=k?MON[k]:null;m=m||(k?S.mons.find(x=>x.key===k):null);const name=d?monName(k):(m.name||'Mostro personalizzato');
+function scenCode(){const mt=(S.scen.name||'').match(/(\d+[AB]?)\s*$/i);return mt?mt[1].toUpperCase():null}
+function mrow(k,m,ally){const d=k?MON[k]:null;m=m||(k?S.mons.find(x=>x.key===k):null);const name=d?monName(k):(m.name||'Mostro personalizzato');
  const st=m?m.st:[],ne=st.filter(x=>x.e).length,nn=st.length-ne,lv=m?m.lv:(pendLv[k]??null),boss=d?!!d.b:!!(m&&m.boss),id=k?`data-k="${h(k)}"`:`data-id="${m.id}"`;
  const info=st.length?(boss?`${st.length} in campo`:[nn?`${nn} normal${nn===1?'e':'i'}`:'',ne?`${ne} élite`:''].filter(Boolean).join(' · ')+' in campo'):'';
  return `<div class="mrow ${st.length?'on':''}" data-q="${h((name+' '+(d&&d.en||'')).toLowerCase())}">
- <button class="mrow-n" data-a="monview" data-v="${k?'k:'+h(k):'s:'+m.id}">${avatar(name,m&&m.ally?'a':'m',0,'',k||undefined)}<span><b>${h(name)}</b>${info?`<small>${info}</small>`:''}</span></button>
+ <button class="mrow-n" data-a="monview" data-v="${k?'k:'+h(k):'s:'+m.id}">${avatar(name,m&&m.ally?'a':'m',0,'',k||undefined)}<span><b>${h(name)}</b>${ally||(m&&m.ally)?'<small style="color:var(--ally)">alleato</small>':''}${info?`<small>${info}</small>`:''}</span></button>
  <div class="mrow-a">${d?`<select class="mlv" data-mlv ${id} aria-label="Livello di ${h(name)}"><option value="" ${lv==null?'selected':''}>Liv. ${S.level} (scenario)</option>${[0,1,2,3,4,5,6,7].map(l=>`<option value="${l}" ${lv===l?'selected':''}>Livello ${l}</option>`).join('')}</select>`:''}
- ${boss?`<button class="btn sm" data-a="qadd" ${id} data-e="0">Boss</button>`:`<button class="btn sm" data-a="qadd" ${id} data-e="0">Normale</button><button class="btn sm elite" data-a="qadd" ${id} data-e="1">Élite</button>`}
+ ${boss?`<button class="btn sm" data-a="qadd" ${id} ${ally?'data-ally="1"':''} data-e="0">Boss</button>`:`<button class="btn sm" data-a="qadd" ${id} ${ally?'data-ally="1"':''} data-e="0">Normale</button><button class="btn sm elite" data-a="qadd" ${id} ${ally?'data-ally="1"':''} data-e="1">Élite</button>`}
  <button class="btn sm warn" data-a="qdel" ${id} ${st.length?'':'disabled'}>Elimina mostro</button></div></div>`}
 function vMostri(){
  if(monView)return vMonDetail(monView);
  const all=Object.keys(MON).sort((a,b)=>monName(a).localeCompare(monName(b),'it'));
  const reg=all.filter(k=>!MON[k].h&&!MON[k].b),spec=all.filter(k=>MON[k].h||MON[k].b),custom=S.mons.filter(m=>!m.key);
+ const code=scenCode(),sc=code&&SCN[code],al=sc&&sc.a||[],skeys=sc?[...new Set([...sc.m,...al])]:[];
+ const scP=`<div class="panel"><div class="row sp"><h3>Mostri scenario${code?' '+h(code):''} ${sc?`<span class="pg">${skeys.length}</span>`:''}</h3>
+ <span class="row"><input id="scnum2" placeholder="${code?'Cambia: es. 12':'Scenario: es. 1, 12, 4A'}" style="width:12em" aria-label="Numero dello scenario"><button class="btn sm" data-a="scset">${code?'Cambia':'Imposta'}</button></span></div>
+ ${sc?`<div class="mrows">${skeys.map(k=>mrow(k,null,al.includes(k))).join('')}</div><p class="muted small">Sono i mostri all’inizio dello scenario; quelli che entrano leggendo una sezione li trovi nell’elenco completo.</p>`:`<p class="muted small">${code?`Lo scenario ${h(code)} non è nell’elenco: scrivi il numero esatto (per esempio 4A).`:'Scrivi il numero dello scenario per vedere qui i suoi mostri.'}</p>`}</div>`;
  return `<div class="row sp"><h2>Mostri</h2><button class="btn" data-a="addmon">+ Mostro personalizzato</button></div>
+ ${scP}
  ${custom.length?`<div class="panel"><h3>Mostri personalizzati</h3><div class="mrows">${custom.map(m=>mrow(null,m)).join('')}</div></div>`:''}
  <div class="panel"><div class="row sp"><h3>Tutti i mostri <span class="pg">${reg.length}</span></h3><input type="search" id="monq" placeholder="Cerca un mostro" style="flex:1 1 12em;max-width:320px" aria-label="Cerca un mostro"></div>
  <div class="mrows" data-ml>${reg.map(k=>mrow(k)).join('')}</div><p class="muted small" id="monq-none" hidden>Nessun mostro con questo nome.</p></div>
@@ -1104,8 +1110,9 @@ const A={
  addst(b){const m=S.mons[+b.dataset.m],e=b.dataset.e==='1';if(m.max&&m.st.length>=m.max){toast('Tutte le pedine di questa serie sono già sulla mappa');return false}let n=1;while(m.st.some(s=>s.n===n))n++;m.st.push({n,e,hp:(e?m.e:m.n).hp,cond:[],seq:S.seq=(S.seq||0)+1})},
  mopen(b){modal={k:b.dataset.k,id:b.dataset.id,s:+b.dataset.s||0}},
  mclose(){modal=null},
+ scset(){const code=$('#scnum2').value.trim().toUpperCase().replace(/^#/,'');if(!SCN[code]){toast(SCN[code+'A']?`Esistono ${code}A e ${code}B: scrivi quale`:'Scenario non trovato: scrivi il numero, per esempio 12 o 4A');return false}S.scen.name='Scenario '+code;toast(`Scenario ${code}: ${SCN[code].m.length} mostri nell’elenco`)},
  qadd(b){const k=b.dataset.k,e=b.dataset.e==='1';let m=k?S.mons.find(x=>x.key===k):S.mons.find(x=>x.id===b.dataset.id);
-  if(!m&&k){m=addFromDb(k,false);if(!m)return false;if(pendLv[k]!=null){m.lv=pendLv[k];applyStats(m)}delete pendLv[k]}
+  if(!m&&k){m=addFromDb(k,b.dataset.ally==='1');if(!m)return false;if(pendLv[k]!=null){m.lv=pendLv[k];applyStats(m)}delete pendLv[k]}
   if(!m)return false;if(m.max&&m.st.length>=m.max){toast(`${m.name}: tutte le ${m.max} pedine sono già in campo`);return false}
   let n=1;while(m.st.some(x=>x.n===n))n++;m.st.push({n,e:e&&!m.boss,hp:(e?m.e:m.n).hp,cond:[],seq:S.seq=(S.seq||0)+1});
   toast(`${m.name} ${n} ${m.boss?'(boss)':e?'élite':'normale'} aggiunto in campo`)},
