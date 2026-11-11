@@ -796,7 +796,7 @@ function vPartita(){
    turn=`<div class="panel turn"><div class="turn-h">${zw(avatar(cur.name,'c',cur.i,'xl'),!c.img&&PT['c:'+c.cls],cur.name)}<span class="tn"><span class="lbl">È il turno di</span><h2>${h(cur.name)}</h2></span><button class="btn pri" data-a="endturn">Fine turno</button></div>
    ${c.summons.length?`<div class="note">Prima agiscono le sue evocazioni, in ordine: ${c.summons.map(s=>h(s.name||'evocazione')).join(', ')}.</div>`:''}
    ${condNotes(c)}
-   ${c.rest?`<div class="note">Riposo lungo: perdi 1 carta a scelta dagli scarti e riprendi le altre; Cura 2 su te stesso (facoltativo); recupera gli oggetti spesi (facoltativo).</div><div class="row"><button class="btn sm" data-a="lrest" data-i="${cur.i}">Applica riposo lungo</button></div>`
+   ${c.rest?`<div class="note">${GI('recover')} Riposo lungo già applicato con la spunta RL: 1 carta persa (scegliete quale tra gli scarti), le altre riprese in mano, Cura 2 e oggetti spesi recuperati. In questo turno non fa altro.</div>`
      :'<div class="note">Azione superiore di una carta + azione inferiore dell’altra. A fine turno: saccheggia il tuo esagono, gli elementi infusi diventano forti.</div>'}
    <div class="row">${cnt('<span class="cl">'+CI('health')+'Punti ferita</span>',p+'.hp',c.hp,0,c.maxHp,'hp')}<span style="flex:1 1 120px;align-self:flex-end;padding-bottom:12px">${hpbar(c.hp,c.maxHp,'w')}</span></div>
    <div class="row">${cnt('<span class="cl">'+CI('experience')+'Esperienza</span>',p+'.xp',c.xp)}${cnt('<span class="cl">'+GI('loot')+'Monete</span>',p+'.loot',c.loot)}${cnt('Mano',p+'.hand',c.hand)}${cnt('Scarti',p+'.discard',c.discard)}${cnt('Perse',p+'.lost',c.lost)}</div>
@@ -868,7 +868,7 @@ function charCard(c,i){const p=`chars.${i}`,nx=XPLV[c.level]??null;
   ${hpbar(c.hp,c.maxHp,'w')}
   <div>${condUI(p+'.cond',c.cond,1)}</div>
   <div class="row">${cnt('Mano',p+'.hand',c.hand)}${cnt('Scarti',p+'.discard',c.discard)}${cnt('Perse',p+'.lost',c.lost)}</div>
-  <div class="row"><button class="btn sm" data-a="srest" data-i="${i}" title="Perdi 1 carta casuale dagli scarti, riprendi le altre">${GI('recover')}Riposo breve</button><button class="btn sm" data-a="lrest" data-i="${i}" title="Perdi 1 carta a scelta, riprendi le altre, Cura 2">${GI('recover')}Riposo lungo</button><label class="small"><input type="checkbox" data-p="${p}.ex" ${c.ex?'checked':''}> sfinito</label>${c.discard>=2||c.rest?`<label class="small" title="Dichiara un riposo lungo: iniziativa 99"><input type="checkbox" data-p="${p}.rest" ${c.rest?'checked':''}> riposo lungo</label>`:''}<label class="small" title="Non gioca questo scenario: salta l’iniziativa e non conta per i punti ferita dei mostri"><input type="checkbox" data-p="${p}.absent" ${c.absent?'checked':''}> assente</label></div>
+  <div class="row"><button class="btn sm" data-a="srest" data-i="${i}" title="Perdi 1 carta casuale dagli scarti, riprendi le altre">${GI('recover')}Riposo breve</button><button class="btn sm" data-a="lrest" data-i="${i}" title="Perdi 1 carta a scelta, riprendi le altre, Cura 2">${GI('recover')}Riposo lungo</button><label class="small"><input type="checkbox" data-p="${p}.ex" ${c.ex?'checked':''}> sfinito</label>${c.rest?'<span class="tag c">riposo lungo</span>':''}<label class="small" title="Non gioca questo scenario: salta l’iniziativa e non conta per i punti ferita dei mostri"><input type="checkbox" data-p="${p}.absent" ${c.absent?'checked':''}> assente</label></div>
   <div class="row">${cnt('<span class="cl">'+CI('experience')+'Esperienza scenario</span>',p+'.xp',c.xp)}${cnt('<span class="cl">'+GI('loot')+'Monete raccolte</span>',p+'.loot',c.loot)}<span class="small muted">${slText(c)}</span></div>
   <div><div class="row sp"><b class="small">Evocazioni</b><button class="btn sm" data-a="addsum" data-i="${i}">+ Evocazione</button></div>
   ${c.summons.map((s,si)=>`<div class="row" style="margin-top:6px"><input style="flex:1 1 7em" data-p="${p}.summons.${si}.name" value="${h(s.name)}" placeholder="Nome" aria-label="Nome evocazione">${stp(`${p}.summons.${si}.hp`,s.hp,0,40,'hp')}${['att','mov','rng'].map((f,k)=>`<input type="number" min="0" style="width:3.6em" data-p="${p}.summons.${si}.${f}" value="${h(s[f]??'')}" placeholder="${['Att','Mov','Git'][k]}" title="${['Attacco','Movimento','Gittata'][k]}" aria-label="${['Attacco','Movimento','Gittata'][k]}">`).join('')}<button class="btn sm warn" data-a="delsum" data-i="${i}" data-s="${si}" aria-label="Rimuovi evocazione">×</button></div>`).join('')}</div>
@@ -1201,7 +1201,7 @@ function render(){
 /* ---------- azioni ---------- */
 function endRound(){
  ELS.forEach(([k])=>{if(S.els[k])S.els[k]--});
- S.chars.forEach(c=>{c.init=null;c.init2=null;c.rest=false});S.mons.forEach(m=>m.init=null);
+ S.chars.forEach(c=>{c.init=null;c.init2=null;c.rest=false;c.rested=false});S.mons.forEach(m=>m.init=null);
  allDecks().forEach(d=>{if(d.sh)reshuffle(d)});
  S.done=[];S.round++;S.step=1;
  const ex=S.chars.filter(c=>!c.ex&&c.hand<2&&c.discard<2);
@@ -1356,8 +1356,8 @@ document.addEventListener('change',e=>{const t=e.target;
  else{const v=t.type==='checkbox'?t.checked:t.type==='number'?(t.value===''?null:+t.value):t.value;set(t.dataset.p,v);if(t.dataset.p==='set.wake')applyWake();
   const mlv=t.dataset.p.match(/^mons\.(\d+)\.lv$/);if(mlv){const m=S.mons[mlv[1]];m.lv=t.value===''?null:+t.value;applyStats(m)}
   if(/^chars\.\d+\.absent$/.test(t.dataset.p))S.mons.forEach(m=>applyStats(m));
-  const mi=t.dataset.p.match(/^chars\.(\d+)\.init$/);if(mi){const c=S.chars[mi[1]];c.rest=v===99&&c.discard>=2;if(v===99&&c.discard<2)toast(`${c.name||c.cls}: niente riposo lungo, servono almeno 2 carte negli scarti`)}
-  const mr=t.dataset.p.match(/^chars\.(\d+)\.rest$/);if(mr){const c=S.chars[mr[1]];if(v)c.init=99;else if(c.init===99)c.init=null}
+  const mi=t.dataset.p.match(/^chars\.(\d+)\.init$/);if(mi){const c=S.chars[mi[1]];const can=v===99&&(c.discard>=2||c.rested);if(can&&!c.rested){rest(+mi[1],true);c.rested=true}if(!can)c.rested=false;c.rest=can;if(v===99&&c.discard<2)toast(`${c.name||c.cls}: niente riposo lungo, servono almeno 2 carte negli scarti`)}
+  const mr=t.dataset.p.match(/^chars\.(\d+)\.rest$/);if(mr){const i=+mr[1],c=S.chars[i];if(v){c.init=99;if(!c.rested){c.rest=false;rest(i,true);c.rest=true;c.rested=true}}else{if(c.init===99)c.init=null;if(c.rested)toast('Riposo lungo tolto. Per riavere carte e punti ferita di prima usa la freccia «annulla» in alto.');c.rested=false}}
   const ms=t.dataset.p.match(/^mons\.(\d+)\.st\.(\d+)\.n$/);if(ms){const m=S.mons[ms[1]];if(m.st.filter(x=>x.n===v).length>1)toast(`Il numero ${v} è già usato da un’altra pedina di ${m.name}`)}const mc=t.dataset.p.match(/^chars\.(\d+)\.cls$/);if(mc)syncHp(S.chars[mc[1]])}
  pushHist(before);
  if(t.tagName==='TEXTAREA'){save();return}
