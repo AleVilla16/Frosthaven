@@ -586,6 +586,7 @@ th .gi{font-size:1.05rem}
 .chg.tokcur{flex-wrap:nowrap}.tokcur .tside{flex-direction:column;flex:0 1 auto;gap:4px}.tokcur .sumg{flex-wrap:wrap;justify-content:flex-end}
 .chg.hassum:not(.tokcur){padding:6px 8px;border-radius:14px;background:color-mix(in srgb,#4ea3ff 8%,transparent);box-shadow:inset 0 0 0 1.5px color-mix(in srgb,#4ea3ff 35%,transparent)}.sumg{margin-left:0!important}.tokcur .sumg{order:0}.sumbtn{margin-top:4px;align-self:flex-start;font-size:.75rem;padding:3px 10px;min-height:28px}.sdg{display:grid;grid-template-columns:repeat(auto-fit,minmax(7em,1fr));gap:8px;margin-top:10px}.sdprev{margin-top:8px;display:flex;flex-direction:column;gap:4px}
 .scwl{font-size:.8rem}.scwl .good{color:var(--good)}.scwl .bad{color:var(--bad)}
+.ini-tg{display:flex;align-items:center;gap:inherit;flex:1;min-width:0;cursor:pointer}.ini-r.tg,.ini-r.tg *{cursor:pointer}.ini-r.done{opacity:.55}.ini-r.done:hover{opacity:.8}
 </style>
 </head>
 <body>
@@ -862,8 +863,8 @@ function vPartita(){
   ini=`<div class="panel ini-panel"><div class="row sp"><h2>${GI('initiative')}Iniziativa</h2><span class="muted small">${S.step===3?'Ordine di turno · tocca per segnare fatto':'Scrivi i numeri, Invio per passare al successivo'}</span></div>
   ${ord.length?`<form class="ini" data-ini novalidate>${ord.map((e,n)=>{const c=e.k==='c'?S.chars[e.i]:null,done=S.step===3&&S.done.includes(e.id),isCur=cur&&cur.id===e.id;const base=c?`chars.${e.i}`:`mons.${e.i}`;
    const edit=S.step<3||e.ini==null,sub=[c&&c.rest?'riposo lungo':'',isCur?'<b style="color:var(--accent)">tocca a lui</b>':'',done?'fatto':''].filter(Boolean).join(' · ');
-   return `<div class="ini-r ${isCur?'cur':''} ${done?'done':''} ${edit?'':'tg'}" ${edit?'':`data-a="tog" data-id="${e.id}" role="button" tabindex="0" title="${done?'Tocca per riattivare':'Tocca per segnare fatto'}"`}>${S.step===3?`<span class="ordn">${done?CI('done','Fatto'):n+1}</span>`:''}${avatar(e.name,c?'c':e.ally?'a':'m',e.i)}
-   <span class="nm"><b>${h(e.name)}</b>${sub?`<span class="sub">${sub}</span>`:''}</span>
+   return `<div class="ini-r ${isCur?'cur':''} ${done?'done':''} ${edit?'':'tg'}" ${edit?'':`data-a="tog" data-id="${e.id}" role="button" tabindex="0" title="${done?'Tocca per riattivare':'Tocca per segnare fatto'}"`}>${S.step===3&&edit?`<span class="ini-tg" data-a="tog" data-id="${e.id}" role="button" tabindex="0" title="${done?'Tocca per riattivare':'Tocca per segnare fatto'}">`:''}${S.step===3?`<span class="ordn">${done?CI('done','Fatto'):n+1}</span>`:''}${avatar(e.name,c?'c':e.ally?'a':'m',e.i)}
+   <span class="nm"><b>${h(e.name)}</b>${sub?`<span class="sub">${sub}</span>`:''}</span>${S.step===3&&edit?'</span>':''}
    ${edit?`${c&&(c.discard>=2||c.rest)?`<label class="lr" title="Riposo lungo (iniziativa 99)"><input type="checkbox" data-p="${base}.rest" ${c.rest?'checked':''} aria-label="Riposo lungo per ${h(e.name)}"><span>RL</span></label>`:c?'<span class="lr lr-x" title="Riposo lungo non possibile: servono almeno 2 carte negli scarti"></span>':''}<input class="init" type="number" inputmode="numeric" enterkeyhint="${n===ord.length-1?'done':'next'}" min="1" max="99" data-p="${base}.init" value="${h(e.ini??'')}" aria-label="Iniziativa di ${h(e.name)}" placeholder="—">`:`<b class="inum">${h(e.ini)}</b>`}</div>`}).join('')}</form>
    ${S.step<3?'<p class="muted small">Per il riposo lungo scrivi 99.</p>':''}`
    :'<p class="muted">Qui compaiono personaggi e mostri in gioco. <a href="#personaggi">Aggiungi i personaggi</a> e <a href="#mostri">i mostri</a>.</p>'}</div>`}
